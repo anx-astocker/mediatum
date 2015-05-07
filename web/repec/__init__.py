@@ -1,15 +1,17 @@
 from core.transition import httpstatus
 
 
-class Content:
+class RDFContent(object):
 
-    def feedback(self, req):
-        pass
+    def __init__(self, req):
+        self.request = req
 
-    def html(self, req):
+    def rdf(self):
         return ""
 
     def status(self):
         return httpstatus.HTTP_OK
 
-
+    def respond(self):
+        self.request.write(self.rdf())
+        return self.status()

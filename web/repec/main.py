@@ -18,58 +18,51 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import json
 import logging
 
-import core.acl
-import core.config as config
-import core.users as users
-import core.xmlnode as xmlnode
-import core.tree as tree
-from utils.utils import *
-from core.acl import AccessData
-from core.metatype import Context
-from core.translation import lang
-from core.tree import db
-from web.frontend.frame import getNavigationFrame
-from web.frontend.content import getContentArea, ContentNode
-from schema.schema import getMetadataType, getMetaType
+from core import users
 from core.transition import httpstatus
+
+from web.repec.content import CollectionContent
 
 
 logg = logging.getLogger("repec")
 
 
 def collection(req):
-    print "RePEc Collection"
-    pass
+    logg.debug("RePEc Collection")
+
+    req['Content-Type'] = 'text/plain'
+
+    content = CollectionContent(req)
+    return content.respond()
 
 
 def collection_arch(req):
-    print "RePEc Collection Archive"
+    logg.debug("RePEc Collection Archive")
     pass
 
 
 def collection_seri(req):
-    print "RePEc Collection Serialized"
+    logg.debug("RePEc Collection Serialized")
     pass
 
 
 def journl(req):
-    print "RePEc Journal"
+    logg.debug("RePEc Journal")
     pass
 
 
 def journl_rdf(req):
-    print "RePEc Journal RDF"
+    logg.debug("RePEc Journal RDF")
     pass
 
 
 def wpaper(req):
-    print "RePEc Paper"
+    logg.debug("RePEc Paper")
     pass
 
 
 def wpaper_rdf(req):
-    print "RePEc Paper RDF"
+    logg.debug("RePEc Paper RDF")
     pass
