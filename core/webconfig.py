@@ -128,6 +128,16 @@ def initContexts():
     # file.addHandler("send_bookconfig_xml").addPattern("/[0-9]*/bookconfig.xml")
     # file.addHandler("send_page").addPattern("/[0-9]*/page/[0-9]*\.jpg")
 
+    # === RePEc ===
+    file = context.addFile("web/repec/main.py")
+    file.addHandler("wpaper").addPattern("/repec/[/@_\.\-\d\w]+/wpaper/?$")
+    file.addHandler("wpaper_rdf").addPattern("/repec/[/@_\.\-\d\w]+/wpaper/[@_\.\-\d\w]+\.rdf$")
+    file.addHandler("journl").addPattern("/repec/[/@_\.\-\d\w]+/journl/?$")
+    file.addHandler("journl_rdf").addPattern("/repec/[/@_\.\-\d\w]+/journl/[@_\.\-\d\w]+\.rdf$")
+    file.addHandler("collection_seri").addPattern("/repec/[/@_\.\-\d\w]+/[@_\.\-\d\w]+seri.rdf$")
+    file.addHandler("collection_arch").addPattern("/repec/[/@_\.\-\d\w]+/[@_\.\-\d\w]+arch.rdf$")
+    file.addHandler("collection").addPattern("/repec/[/@_\.\-\d\w]+$")
+
     # === workflow ===
     #file = context.addFile("web/publish/main.py")
     # file.addHandler("publish").addPattern("/publish/.*")
