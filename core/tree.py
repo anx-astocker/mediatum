@@ -147,6 +147,10 @@ def getDirtySchemaNodes(num=0):
     return NodeList(db.getDirtySchemas(num))
 
 
+def getNodesByFieldValue(**kwargs):
+    return NodeList(db.get_nodes_by_field_value(**kwargs))
+
+
 class NoSuchNodeError:
 
     def __init__(self, id=None):

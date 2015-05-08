@@ -23,7 +23,7 @@ import logging
 from core import users
 from core.transition import httpstatus
 
-from web.repec.content import CollectionContent
+from web.repec.content import CollectionArchiveContent
 
 
 logg = logging.getLogger("repec")
@@ -31,20 +31,20 @@ logg = logging.getLogger("repec")
 
 def collection(req):
     logg.debug("RePEc Collection")
-
-    req['Content-Type'] = 'text/plain'
-
-    content = CollectionContent(req)
-    return content.respond()
+    return collection_arch(req)
 
 
 def collection_arch(req):
     logg.debug("RePEc Collection Archive")
-    pass
+
+    req['Content-Type'] = 'text/plain'
+
+    content = CollectionArchiveContent(req)
+    return content.respond()
 
 
 def collection_seri(req):
-    logg.debug("RePEc Collection Serialized")
+    logg.debug("RePEc Collection Series")
     pass
 
 

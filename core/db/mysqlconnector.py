@@ -461,3 +461,24 @@ class MYSQLConnector(Connector):
         :param fields: field names to sort for. Prepend - to sort descending
         """
         return self._sort_nodes_by_fields_get_all(nids, fields)
+
+    def _get_nodes_by_field_value(self, **kwargs):
+        sql_parameters = ()
+        sql_conditions = []
+        sql_query = """
+SELECT DISTINCT n.id
+FROM `node` n INNER JOIN
+     `nodeattribute` a ON a.`nid` = n.`id`
+        """
+
+        for field, value in kwargs.items():
+            sql_conditions.append("(CAST(a.`name` AS CHAR(50)) = %s AND a.`value` = %s)")
+            sql_parameters += (field, value)
+
+        if sql_conditions:
+            sql_query += " WHERE " + " AND ".join(sql_conditions)
+
+        return [str(r[0]) for r in self.runQuery(sql_query, *sql_parameters)]
+
+    def get_nodes_by_field_value(self, **kwargs):
+        return self._get_nodes_by_field_value(**kwargs)

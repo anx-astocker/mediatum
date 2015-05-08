@@ -1,9 +1,15 @@
-from core import tree
+import re
+
+from core import tree, config
 from core.acl import AccessData
+from core.users import getUser
 from core.transition import httpstatus
 
 from web.repec import RDFContent
 from web.repec.redif import redif_encode_archive
+
+
+_MATCH_REPEC_CODE = re.compile(r"^/repec/(?P<code>[\d\w]+)/((?P<code_check>[\d\w]+)(arch)|(seri))?.*$")
 
 
 class NodeContent(RDFContent):
@@ -29,12 +35,11 @@ class NodeContent(RDFContent):
         return [NodeContent(self.request, self.collection_content, n) for n in nodes]
 
 
-class CollectionContent(RDFContent):
+class CollectionArchiveContent(RDFContent):
 
     def __init__(self, req):
-        super(CollectionContent, self).__init__(req)
+        super(CollectionArchiveContent, self).__init__(req)
 
-        self.archive_code = "aaa"  # TODO: archive code from collection
         self.status_code = httpstatus.HTTP_INTERNAL_SERVER_ERROR
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
@@ -43,23 +48,20 @@ class CollectionContent(RDFContent):
         return self.status_code
 
     def rdf(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        collection_node = self.active_collection.node
+        collection_owner = getUser(collection_node["creator"])
+        root_domain = config.get("host.name", "mediatum.local")
+
         # TODO: use real data
         return redif_encode_archive({
-            "Handle": "RePEc:%s" % self.archive_code,
-            "URL": "http://www.test.at/",
-            "Maintainer-Email": "test@test.at",
-            "Name": "Das ist ein Test",
-            "Maintainer-Name": "Max Muster",
-            "Maintainer-Phone": "+43 1234 567890",
-            "Maintainer-Fax": "+43 1234 567890 123",
-            "Homepage": "http://www.test.at/",
-            "Description": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor "
-                           "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et "
-                           "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata "
-                           "sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing "
-                           "elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, "
-                           "sed diam voluptua.",
-            "Notification": "Test",
+            "Handle": "RePEc:%s" % collection_node["repec_code"],
+            "URL": "http://%s/repec/%s" % (root_domain, collection_node["repec_code"]),
+            "Name": collection_node.unicode_name,
+            "Maintainer-Name": collection_owner.unicode_name,
+            "Maintainer-Email": collection_owner["email"],
             "Restriction": None,
         })
 
@@ -68,11 +70,27 @@ class CollectionContent(RDFContent):
 
     def _get_active_collection(self):
         acl = AccessData(self.request)
-        collection_id = self.request.params.get("id", self.root_collection.node.id)
+
+        try:
+            path_match = _MATCH_REPEC_CODE.match(self.request.fullpath)
+            repec_code = path_match.group("code")
+            repec_code_check = path_match.group("code_check")
+
+            # if we have a check-code in the url, it must equal the code value
+            if repec_code_check is not None and repec_code_check != repec_code:
+                raise AttributeError
+
+        except (IndexError, AttributeError):
+            # path does not contain a repec code
+            self.status_code = httpstatus.HTTP_NOT_FOUND
+            return None
 
         # try to load the node
         try:
-            node = tree.getNode(collection_id)
+            nodes = tree.getNodesByFieldValue(repec_code=repec_code)
+            if len(nodes) != 1:
+                raise tree.NoSuchNodeError
+            node = nodes[0]
         except tree.NoSuchNodeError:
             # requested node not in DB, so set status to 404
             self.status_code = httpstatus.HTTP_NOT_FOUND
