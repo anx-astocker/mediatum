@@ -248,6 +248,12 @@ class Directory(default.Default):
 
         if self.type.startswith("collection"):
             # special fields for collections
+            field = tree.Node("repec_code", "metafield")
+            field.set("label", t(lang, "RePEc archive code"))
+            field.set("language", "no")
+            field.set("type", "text")
+            ret.append(field)
+
             field = tree.Node("style_hide_empty", "metafield")
             field.set("label", t(lang, "hide empty directories"))
             field.set("type", "check")
