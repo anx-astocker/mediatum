@@ -127,12 +127,22 @@ class CollectionArchiveContent(CollectionContent):
         collection_owner = getUser(collection_node["creator"])
         root_domain = config.get("host.name", "mediatum.local")
 
-        # TODO: use real data
-        return redif_encode_archive({
+        if not collection_owner:
+            collection_owner = getUser(collection_node["updateuser"])
+
+        collection_data = {
             "Handle": "RePEc:%s" % collection_node["repec_code"],
             "URL": "http://%s/repec/%s" % (root_domain, collection_node["repec_code"]),
             "Name": collection_node.unicode_name,
-            "Maintainer-Name": collection_owner.unicode_name,
-            "Maintainer-Email": collection_owner["email"],
+            "Maintainer-Name": "Unknown",
+            "Maintainer-Email": "nomail@%s" % root_domain,
             "Restriction": None,
-        })
+        }
+
+        if collection_owner:
+            collection_data.update({
+                "Maintainer-Name": collection_owner.unicode_name,
+                "Maintainer-Email": collection_owner["email"],
+            })
+
+        return redif_encode_archive(collection_data)
