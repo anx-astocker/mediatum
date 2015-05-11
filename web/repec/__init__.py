@@ -45,6 +45,22 @@ class HTTPContent(object):
 
 class CollectionMixin(object):
 
+    def _get_inherited_attribute_value(self, node, attr):
+        try:
+            # try to get the attr from given node
+            return node[attr]
+        except KeyError:
+            if node.id != 1:  # do not traverse up if we are on root node
+                for parent in node.getParents():
+                    try:
+                        # go up in tree
+                        return self._get_inherited_attribute_value(parent, attr)
+                    except KeyError:
+                        pass
+
+        # attr does not exist in node tree
+        raise KeyError
+
     def _get_node_owner(self, node):
         try:
             node_owner = getUser(node["creator"])

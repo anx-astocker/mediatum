@@ -20,10 +20,7 @@
 """
 import logging
 
-from core import users
-from core.transition import httpstatus
-
-from web.repec.content import CollectionArchiveContent, CollectionSeriesContent
+from web.repec.content import *
 
 
 logg = logging.getLogger("repec")
@@ -31,7 +28,11 @@ logg = logging.getLogger("repec")
 
 def collection(req):
     logg.debug("RePEc Collection")
-    return collection_arch(req)
+
+    req['Content-Type'] = 'text/html'
+
+    content = HTMLCollectionContent(req)
+    return content.respond()
 
 
 def collection_arch(req):

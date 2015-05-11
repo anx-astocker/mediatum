@@ -1,3 +1,5 @@
+from mediatumtal import tal
+
 from core import config
 from core.transition import httpstatus
 
@@ -10,13 +12,23 @@ class HTMLCollectionContent(HTTPContent, CollectionMixin):
     Base class for collection HTML content.
     """
 
-    def __init__(self, req, status_code):
+    def __init__(self, req):
         super(HTMLCollectionContent, self).__init__(req)
 
-        self.status_code = status_code
+        self.status_code = httpstatus.HTTP_OK
 
     def status(self):
         return self.status_code
+
+    def html(self):
+        return tal.processTAL({
+            "items": [
+                ("./aaaarch.rdf", "aaaarch.rdf"),
+                ("./aaaseri.rdf", "aaaseri.rdf"),
+                ("./journl/", "journl"),
+                ("./wpaper/", "wpaper"),
+            ]
+        }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
 
 class RDFCollectionContent(RDFContent, CollectionMixin):
@@ -89,15 +101,18 @@ class CollectionSeriesContent(RDFCollectionContent):
         collection_owner = self._get_node_owner(collection_node)
         root_domain = config.get("host.name", "mediatum.local")
 
+        repec_code = collection_node["repec_code"];
+        provider_name = self._get_inherited_attribute_value(collection_node, "tuminstid")
+        provider_id = str(provider_name).lower()
+
         collection_data = {
             "Name": "Working Papers",
-            "Provider-Name": "Grandiose University, Department of Economics",
-            "Provider-Homepage": "http://%s/" % root_domain,
-            "Provider-Institution": "RePEc:edi:degraus",
+            "Provider-Name": "TUM, %s" % provider_name,
+            "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
             "Type": "ReDIF-Paper",
-            "Handle": "RePEc:%s:wpaper" % collection_node["repec_code"],
+            "Handle": "RePEc:%s:wpaper" % repec_code,
         }
 
         if collection_owner:
