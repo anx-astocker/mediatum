@@ -35,40 +35,36 @@ class NodeContent(RDFContent):
         return [NodeContent(self.request, self.collection_content, n) for n in nodes]
 
 
-class CollectionArchiveContent(RDFContent):
+class CollectionContent(RDFContent):
+    """
+    Base class for collection RDF content.
+    """
 
-    def __init__(self, req):
-        super(CollectionArchiveContent, self).__init__(req)
+    def __init__(self, req, status_code):
+        super(CollectionContent, self).__init__(req)
 
-        self.status_code = httpstatus.HTTP_INTERNAL_SERVER_ERROR
-        self.root_collection = self._get_root_collection()
-        self.active_collection = self._get_active_collection()
+        self.status_code = status_code
 
     def status(self):
         return self.status_code
 
-    def rdf(self):
-        if self.status_code != httpstatus.HTTP_OK:
-            return ""
-
-        collection_node = self.active_collection.node
-        collection_owner = getUser(collection_node["creator"])
-        root_domain = config.get("host.name", "mediatum.local")
-
-        # TODO: use real data
-        return redif_encode_archive({
-            "Handle": "RePEc:%s" % collection_node["repec_code"],
-            "URL": "http://%s/repec/%s" % (root_domain, collection_node["repec_code"]),
-            "Name": collection_node.unicode_name,
-            "Maintainer-Name": collection_owner.unicode_name,
-            "Maintainer-Email": collection_owner["email"],
-            "Restriction": None,
-        })
-
     def _get_root_collection(self):
+        """
+        Gets the root collection of the entire MediaTUM database.
+        """
         return NodeContent(self.request, self, tree.getRoot("collections"))
 
     def _get_active_collection(self):
+        """
+        Gets the active collection based on the request url. The RePEc code is used to
+        choose the collection. Expects URL path in the format as follows:
+
+        * `/repec/REPEC_CODE`
+        * `/repec/REPEC_CODE/REPEC_CODEarch.rdf`
+        * `/repec/REPEC_CODE/REPEC_CODEseri.rdf`
+        * `/repec/REPEC_CODE/journl/...`
+        * `/repec/REPEC_CODE/wpaper/...`
+        """
         acl = AccessData(self.request)
 
         try:
@@ -110,3 +106,33 @@ class CollectionArchiveContent(RDFContent):
         self.status_code = httpstatus.HTTP_OK
 
         return NodeContent(self.request, self, node)
+
+
+class CollectionArchiveContent(CollectionContent):
+    """
+    Class used for generating RDF of an archive.
+    """
+
+    def __init__(self, req):
+        super(CollectionArchiveContent, self).__init__(req, httpstatus.HTTP_INTERNAL_SERVER_ERROR)
+
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
+
+    def rdf(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        collection_node = self.active_collection.node
+        collection_owner = getUser(collection_node["creator"])
+        root_domain = config.get("host.name", "mediatum.local")
+
+        # TODO: use real data
+        return redif_encode_archive({
+            "Handle": "RePEc:%s" % collection_node["repec_code"],
+            "URL": "http://%s/repec/%s" % (root_domain, collection_node["repec_code"]),
+            "Name": collection_node.unicode_name,
+            "Maintainer-Name": collection_owner.unicode_name,
+            "Maintainer-Email": collection_owner["email"],
+            "Restriction": None,
+        })
