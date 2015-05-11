@@ -23,7 +23,7 @@ import logging
 from core import users
 from core.transition import httpstatus
 
-from web.repec.content import CollectionArchiveContent
+from web.repec.content import CollectionArchiveContent, CollectionSeriesContent
 
 
 logg = logging.getLogger("repec")
@@ -45,7 +45,11 @@ def collection_arch(req):
 
 def collection_seri(req):
     logg.debug("RePEc Collection Series")
-    pass
+
+    req['Content-Type'] = 'text/plain'
+
+    content = CollectionSeriesContent(req)
+    return content.respond()
 
 
 def journl(req):

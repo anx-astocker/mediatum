@@ -48,8 +48,9 @@ class MYSQLConnector(Connector):
         self.database = config.get("database.db", "mediatum")
         self.user = config.get("database.user", "mediatumadmin")
         self.passwd = config.get("database.passwd", "")
+        self.charset = config.get("database.charset", "")
 
-        self.db = MySQLdb.connect(host=self.dbhost, port=self.dbport, user=self.user, passwd=self.passwd, db=self.database)
+        self.db = MySQLdb.connect(host=self.dbhost, port=self.dbport, user=self.user, passwd=self.passwd, db=self.database, charset=self.charset)
         self.dblock = thread.allocate_lock()
         self.nodes = {}
 

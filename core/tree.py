@@ -539,7 +539,7 @@ class Node(object):
 
     @property
     def unicode_name(self):
-        return self._name.decode(encoding="utf8")
+        return self._name.decode(encoding="utf8", errors="replace")
 
     def _makePersistent(self):
         if self.id is None:

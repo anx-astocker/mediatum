@@ -30,7 +30,11 @@ def _redif_encode(data):
 
 
 def _redif_encode_text(value):
-    value = str(value)
+    if isinstance(value, unicode):
+        value = value.encode("utf8")
+    else:
+        value = str(value)
+
     value = value.replace("\r", "")
     value = value.replace("\n", " ")
 
@@ -58,5 +62,12 @@ def _redif_encode_text(value):
 def redif_encode_archive(data):
     return "\n".join((
         "Template-Type: ReDIF-Archive 1.0",
+        _redif_encode(data)
+    ))
+
+
+def redif_encode_series(data):
+    return "\n".join((
+        "Template-Type: ReDIF-Series 1.0",
         _redif_encode(data)
     ))
