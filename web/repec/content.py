@@ -3,13 +3,13 @@ from mediatumtal import tal
 from core import config
 from core.transition import httpstatus
 
-from web.repec import RDFContent, HTTPContent, CollectionMixin
-from web.repec.redif import redif_encode_archive, redif_encode_series
+from web.repec import RDFContent, HTMLContent, CollectionMixin, Node
+from web.repec.redif import *
 
 
-class HTMLCollectionContent(HTTPContent, CollectionMixin):
+class HTMLCollectionContent(HTMLContent, CollectionMixin):
     """
-    Base class for collection HTML content.
+    Lists the content of the RePEc collection as HTML.
     """
 
     def __init__(self, req):
@@ -27,6 +27,48 @@ class HTMLCollectionContent(HTTPContent, CollectionMixin):
                 ("./aaaseri.rdf", "aaaseri.rdf"),
                 ("./journl/", "journl"),
                 ("./wpaper/", "wpaper"),
+            ]
+        }, file="web/repec/templates/directory_browsing.html", request=self.request)
+
+
+class HTMLCollectionPaperContent(HTMLContent, CollectionMixin):
+    """
+    Lists the content of the RePEc working papers as HTML.
+    """
+
+    def __init__(self, req):
+        super(HTMLCollectionPaperContent, self).__init__(req)
+
+        self.status_code = httpstatus.HTTP_OK
+
+    def status(self):
+        return self.status_code
+
+    def html(self):
+        return tal.processTAL({
+            "items": [
+                ("./papers.rdf", "papers.rdf"),
+            ]
+        }, file="web/repec/templates/directory_browsing.html", request=self.request)
+
+
+class HTMLCollectionJournalContent(HTMLContent, CollectionMixin):
+    """
+    Lists the content of the RePEc journal as HTML.
+    """
+
+    def __init__(self, req):
+        super(HTMLCollectionJournalContent, self).__init__(req)
+
+        self.status_code = httpstatus.HTTP_OK
+
+    def status(self):
+        return self.status_code
+
+    def html(self):
+        return tal.processTAL({
+            "items": [
+                ("./journals.rdf", "journals.rdf"),
             ]
         }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
@@ -62,11 +104,11 @@ class CollectionArchiveContent(RDFCollectionContent):
 
         collection_node = self.active_collection.node
         collection_owner = self._get_node_owner(collection_node)
-        root_domain = config.get("host.name", "mediatum.local")
+        root_domain = config.get("host.name")
 
         collection_data = {
             "Handle": "RePEc:%s" % collection_node["repec_code"],
-            "URL": "http://%s/repec/%s" % (root_domain, collection_node["repec_code"]),
+            "URL": "%s/repec/%s" % (self._get_root_url(), collection_node["repec_code"]),
             "Name": collection_node.unicode_name,
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
@@ -84,7 +126,7 @@ class CollectionArchiveContent(RDFCollectionContent):
 
 class CollectionSeriesContent(RDFCollectionContent):
     """
-    Class used for generating RDF of an series.
+    Class used for generating RDF of a series.
     """
 
     def __init__(self, req):
@@ -99,9 +141,9 @@ class CollectionSeriesContent(RDFCollectionContent):
 
         collection_node = self.active_collection.node
         collection_owner = self._get_node_owner(collection_node)
-        root_domain = config.get("host.name", "mediatum.local")
+        root_domain = config.get("host.name")
 
-        repec_code = collection_node["repec_code"];
+        repec_code = collection_node["repec_code"]
         provider_name = self._get_inherited_attribute_value(collection_node, "tuminstid")
         provider_id = str(provider_name).lower()
 
@@ -121,4 +163,124 @@ class CollectionSeriesContent(RDFCollectionContent):
                 "Maintainer-Email": collection_owner["email"],
             })
 
-        return redif_encode_series(collection_data)
+        wpaper_series_rdf = redif_encode_series(collection_data)
+
+        collection_data = {
+            "Name": "Journal",
+            "Provider-Name": "TUM, %s" % provider_name,
+            "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
+            "Maintainer-Name": "Unknown",
+            "Maintainer-Email": "nomail@%s" % root_domain,
+            "Type": "ReDIF-Article",
+            "Handle": "RePEc:%s:journl" % repec_code,
+        }
+
+        if collection_owner:
+            collection_data.update({
+                "Maintainer-Name": collection_owner.unicode_name,
+                "Maintainer-Email": collection_owner["email"],
+            })
+
+        journl_series_rdf = redif_encode_series(collection_data)
+
+        return "\n\n".join((wpaper_series_rdf, journl_series_rdf))
+
+
+class CollectionJournalContent(RDFCollectionContent):
+    """
+    Class used for generating RDF of working papers.
+    """
+
+    def __init__(self, req):
+        super(CollectionJournalContent, self).__init__(req, httpstatus.HTTP_INTERNAL_SERVER_ERROR)
+
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
+
+    def rdf(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        files = self.active_collection.get_all_files()
+        repec_code = self.active_collection.node["repec_code"]
+        rdf_content = []
+
+        for f in files:
+            # skip file if mandatory fields are not present
+            if None in (f.get("author.fullname"), f.get("title")):
+                continue
+
+            file_data = {
+                "_author_1": {
+                    "Author-Name": f.get("author.fullname"),
+                    "Author-Name-First": f.get("author.firstname"),
+                    "Author-Name-Last": f.get("author.surname"),
+                    "Author-Email": f.get("author.public_email"),
+                    "Author-Workplace-Name": f.get("author.origin"),
+                },
+                "Title": f.get("title"),
+                "Pages": "1-2",  # TODO: real data here
+                "Number": f.node.id,
+                "Keywords": f.get("keywords"),
+                "Handle": "RePEc:%s:journl:%s:1-2" % (repec_code, f.node.id),  # TODO: use real pages value here
+            }
+            rdf_content.append(redif_encode_paper(file_data))
+
+        return "\n\n".join(rdf_content)
+
+
+class CollectionPaperContent(RDFCollectionContent):
+    """
+    Class used for generating RDF of journals.
+    """
+
+    def __init__(self, req):
+        super(CollectionPaperContent, self).__init__(req, httpstatus.HTTP_INTERNAL_SERVER_ERROR)
+
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
+
+    def rdf(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        files = self.active_collection.get_all_files()
+        repec_code = self.active_collection.node["repec_code"]
+        rdf_content = []
+
+        for f in files:
+            # skip file if mandatory fields are not present
+            if None in (f.get("author.fullname"), f.get("title")):
+                continue
+
+            creation_date = Node._get_datetime_from_iso_8601(f.get("creationtime"))
+            update_date = Node._get_datetime_from_iso_8601(f.get("updatetime"))
+            has_pdf = f.get("pdf_copy", "no") == "yes"
+
+            file_data = {
+                "_author_1": {
+                    "Author-Name": f.get("author.fullname"),
+                    "Author-Name-First": f.get("author.firstname"),
+                    "Author-Name-Last": f.get("author.surname"),
+                    "Author-Email": f.get("author.public_email"),
+                    "Author-Workplace-Name": f.get("author.origin"),
+                },
+                "_file_1": {
+                    "File-URL": u"%s/doc/%s/%s.pdf" % (self._get_root_url(), f.node.id, f.node.id),
+                    "File-Format": u"application/pdf",
+                    "File-Function": u"%s, %s" % (f.get("type"), f.get("year")) if f.get("type") and f.get("year") else None,
+                } if has_pdf else None,
+                "Title": f.get("title"),
+                "Abstract": f.get("description"),
+                "Length": u"%s pages" % f.get("pdf_pages") if f.get("pdf_pages") else None,
+                "Language": f.get("lang"),
+                "Creation-Date": u"%s-%s" % (creation_date.year, creation_date.month),
+                "Revision-Date": u"%s-%s" % (update_date.year, update_date.month),
+                "Publication-Status": u"Published by %s" % f.get("publisher"),
+                "Number": f.node.id,
+                "Keywords": f.get("keywords"),
+                "Handle": "RePEc:%s:wpaper:%s" % (repec_code, f.node.id),
+            }
+            rdf_content.append(redif_encode_article(file_data))
+
+        return "\n\n".join(rdf_content)

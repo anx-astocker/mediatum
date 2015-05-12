@@ -55,19 +55,35 @@ def collection_seri(req):
 
 def journl(req):
     logg.debug("RePEc Journal")
-    pass
+
+    req['Content-Type'] = 'text/html'
+
+    content = HTMLCollectionJournalContent(req)
+    return content.respond()
 
 
 def journl_rdf(req):
     logg.debug("RePEc Journal RDF")
-    pass
+
+    req['Content-Type'] = 'text/plain'
+
+    content = CollectionJournalContent(req)
+    return content.respond()
 
 
 def wpaper(req):
     logg.debug("RePEc Paper")
-    pass
+
+    req['Content-Type'] = 'text/html'
+
+    content = HTMLCollectionPaperContent(req)
+    return content.respond()
 
 
 def wpaper_rdf(req):
     logg.debug("RePEc Paper RDF")
-    pass
+
+    req['Content-Type'] = 'text/plain'
+
+    content = CollectionPaperContent(req)
+    return content.respond()

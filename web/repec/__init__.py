@@ -1,6 +1,8 @@
 import re
 
-from core import tree
+from datetime import datetime
+
+from core import tree, config
 from core.acl import AccessData
 from core.users import getUser
 from core.transition import httpstatus
@@ -27,7 +29,7 @@ class RDFContent(object):
         return self.status()
 
 
-class HTTPContent(object):
+class HTMLContent(object):
 
     def __init__(self, req):
         self.request = req
@@ -76,6 +78,11 @@ class CollectionMixin(object):
             pass
 
         return None
+
+    def _get_root_url(self):
+        if config.get("config.ssh") == "yes":
+            return "https://%s" % config.get("host.name")
+        return "http://%s" % config.get("host.name")
 
     def _get_root_collection(self):
         """
@@ -145,11 +152,41 @@ class Node(RDFContent):
         self.collection_content = collection_content
         self.node = node
 
+    def __contains__(self, key):
+        return self.node.__contains__(key)
+
+    def __getitem__(self, key):
+        return self.node.__getitem__(key)
+
+    def __iter__(self):
+        return self.node.__iter__()
+
+    def __len__(self):
+        return self.node.__len__()
+
+    def __setitem__(self, key, value):
+        return self.node.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        return self.node.__delitem__(key)
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key]
+        return default
+
     def get_all_files(self):
         return self.__get_files(lambda: tree.getAllContainerChildrenAbs(self.node, list()))
 
     def get_files(self):
         return self.__get_files(self.node.getContentChildren)
+
+    @staticmethod
+    def _get_datetime_from_iso_8601(datestring):
+        try:
+            return datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S")
+        except (TypeError, ValueError):
+            return datetime(year=1970, month=1, day=1)
 
     def __get_files(self, fetch_function):
         acl = AccessData(self.request)

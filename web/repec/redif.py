@@ -20,7 +20,9 @@ def _redif_encode(data):
 
         # treat dicts as sub-templates
         elif isinstance(value, (dict, )):
-            redif_result.append(_redif_encode(value))
+            cluster = _redif_encode(value)
+            if cluster:
+                redif_result.append(cluster)
 
         # treat any other value as text
         else:
@@ -69,5 +71,19 @@ def redif_encode_archive(data):
 def redif_encode_series(data):
     return "\n".join((
         "Template-Type: ReDIF-Series 1.0",
+        _redif_encode(data)
+    ))
+
+
+def redif_encode_paper(data):
+    return "\n".join((
+        "Template-Type: ReDIF-Paper 1.0",
+        _redif_encode(data)
+    ))
+
+
+def redif_encode_article(data):
+    return "\n".join((
+        "Template-Type: ReDIF-Article 1.0",
         _redif_encode(data)
     ))
