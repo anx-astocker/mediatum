@@ -7,6 +7,8 @@ from core.acl import AccessData
 from core.users import getUser
 from core.transition import httpstatus
 
+from contenttypes.document import Document
+
 from web.repec.redif import redif_encode_archive, redif_encode_series
 
 
@@ -78,6 +80,16 @@ class CollectionMixin(object):
             pass
 
         return None
+
+    def _get_document_pdf_url(self, node):
+        root_url = self._get_root_url()
+
+        if not node.has_object() or not isinstance(node, Document):
+            return None
+
+        if "system.origname" in node and node["system.origname"] == "1":
+            return u"%s/doc/%s/%s" % (root_url, node.id, node.getName())
+        return u"%s/doc/%s/%s.pdf" % (root_url, node.id, node.id)
 
     def _get_root_url(self):
         if config.get("config.ssh") == "yes":
@@ -175,11 +187,11 @@ class Node(RDFContent):
             return self[key]
         return default
 
-    def get_all_files(self):
-        return self.__get_files(lambda: tree.getAllContainerChildrenAbs(self.node, list()))
+    def get_all_child_nodes(self):
+        return self.__get_child_nodes(lambda: tree.getAllContainerChildrenAbs(self.node, list()))
 
-    def get_files(self):
-        return self.__get_files(self.node.getContentChildren)
+    def get_child_nodes(self):
+        return self.__get_child_nodes(self.node.getContentChildren)
 
     @staticmethod
     def _get_datetime_from_iso_8601(datestring):
@@ -188,7 +200,7 @@ class Node(RDFContent):
         except (TypeError, ValueError):
             return datetime(year=1970, month=1, day=1)
 
-    def __get_files(self, fetch_function):
+    def __get_child_nodes(self, fetch_function):
         acl = AccessData(self.request)
 
         node_ids = acl.filter(fetch_function())

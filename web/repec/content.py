@@ -201,28 +201,28 @@ class CollectionJournalContent(RDFCollectionContent):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        files = self.active_collection.get_all_files()
+        child_nodes = self.active_collection.get_all_child_nodes()
         repec_code = self.active_collection.node["repec_code"]
         rdf_content = []
 
-        for f in files:
+        for child_node in child_nodes:
             # skip file if mandatory fields are not present
-            if None in (f.get("author.fullname"), f.get("title")):
+            if None in (child_node.get("author.fullname"), child_node.get("title")):
                 continue
 
             file_data = {
                 "_author_1": {
-                    "Author-Name": f.get("author.fullname"),
-                    "Author-Name-First": f.get("author.firstname"),
-                    "Author-Name-Last": f.get("author.surname"),
-                    "Author-Email": f.get("author.public_email"),
-                    "Author-Workplace-Name": f.get("author.origin"),
+                    "Author-Name": child_node.get("author.fullname"),
+                    "Author-Name-First": child_node.get("author.firstname"),
+                    "Author-Name-Last": child_node.get("author.surname"),
+                    "Author-Email": child_node.get("author.public_email"),
+                    "Author-Workplace-Name": child_node.get("author.origin"),
                 },
-                "Title": f.get("title"),
+                "Title": child_node.get("title"),
                 "Pages": "1-2",  # TODO: real data here
-                "Number": f.node.id,
-                "Keywords": f.get("keywords"),
-                "Handle": "RePEc:%s:journl:%s:1-2" % (repec_code, f.node.id),  # TODO: use real pages value here
+                "Number": child_node.node.id,
+                "Keywords": child_node.get("keywords"),
+                "Handle": "RePEc:%s:journl:%s:1-2" % (repec_code, child_node.node.id),  # TODO: use real pages value here
             }
             rdf_content.append(redif_encode_paper(file_data))
 
@@ -244,42 +244,44 @@ class CollectionPaperContent(RDFCollectionContent):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        files = self.active_collection.get_all_files()
+        child_nodes = self.active_collection.get_all_child_nodes()
         repec_code = self.active_collection.node["repec_code"]
         rdf_content = []
 
-        for f in files:
+        for child_node in child_nodes:
             # skip file if mandatory fields are not present
-            if None in (f.get("author.fullname"), f.get("title")):
+            if None in (child_node.get("author.fullname"), child_node.get("title")):
                 continue
 
-            creation_date = Node._get_datetime_from_iso_8601(f.get("creationtime"))
-            update_date = Node._get_datetime_from_iso_8601(f.get("updatetime"))
-            has_pdf = f.get("pdf_copy", "no") == "yes"
+            creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
+            update_date = Node._get_datetime_from_iso_8601(child_node.get("updatetime"))
+            file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
                 "_author_1": {
-                    "Author-Name": f.get("author.fullname"),
-                    "Author-Name-First": f.get("author.firstname"),
-                    "Author-Name-Last": f.get("author.surname"),
-                    "Author-Email": f.get("author.public_email"),
-                    "Author-Workplace-Name": f.get("author.origin"),
+                    "Author-Name": child_node.get("author.fullname"),
+                    "Author-Name-First": child_node.get("author.firstname"),
+                    "Author-Name-Last": child_node.get("author.surname"),
+                    "Author-Email": child_node.get("author.public_email"),
+                    "Author-Workplace-Name": child_node.get("author.origin"),
                 },
                 "_file_1": {
-                    "File-URL": u"%s/doc/%s/%s.pdf" % (self._get_root_url(), f.node.id, f.node.id),
+                    "File-URL": file_url,
                     "File-Format": u"application/pdf",
-                    "File-Function": u"%s, %s" % (f.get("type"), f.get("year")) if f.get("type") and f.get("year") else None,
-                } if has_pdf else None,
-                "Title": f.get("title"),
-                "Abstract": f.get("description"),
-                "Length": u"%s pages" % f.get("pdf_pages") if f.get("pdf_pages") else None,
-                "Language": f.get("lang"),
+                    "File-Function": u"%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                        if child_node.get("type") and child_node.get("year") else None,
+                } if file_url else None,
+                "Title": child_node.get("title"),
+                "Abstract": child_node.get("description"),
+                "Length": u"%s pages" % child_node.get("pdf_pages") if child_node.get("pdf_pages") else None,
+                "Language": child_node.get("lang"),
                 "Creation-Date": u"%s-%s" % (creation_date.year, creation_date.month),
                 "Revision-Date": u"%s-%s" % (update_date.year, update_date.month),
-                "Publication-Status": u"Published by %s" % f.get("publisher"),
-                "Number": f.node.id,
-                "Keywords": f.get("keywords"),
-                "Handle": "RePEc:%s:wpaper:%s" % (repec_code, f.node.id),
+                "Publication-Status": u"Published by %s" % child_node.get("publisher") \
+                    if child_node.get("publisher") else None,
+                "Number": child_node.node.id,
+                "Keywords": child_node.get("keywords"),
+                "Handle": "RePEc:%s:wpaper:%s" % (repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_article(file_data))
 
