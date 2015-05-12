@@ -27,8 +27,6 @@ logg = logging.getLogger("repec")
 
 
 def collection(req):
-    logg.debug("RePEc Collection")
-
     req['Content-Type'] = 'text/html'
 
     content = HTMLCollectionContent(req)
@@ -36,8 +34,6 @@ def collection(req):
 
 
 def collection_arch(req):
-    logg.debug("RePEc Collection Archive")
-
     req['Content-Type'] = 'text/plain'
 
     content = CollectionArchiveContent(req)
@@ -45,8 +41,6 @@ def collection_arch(req):
 
 
 def collection_seri(req):
-    logg.debug("RePEc Collection Series")
-
     req['Content-Type'] = 'text/plain'
 
     content = CollectionSeriesContent(req)
@@ -54,8 +48,6 @@ def collection_seri(req):
 
 
 def journl(req):
-    logg.debug("RePEc Journal")
-
     req['Content-Type'] = 'text/html'
 
     content = HTMLCollectionJournalContent(req)
@@ -63,8 +55,6 @@ def journl(req):
 
 
 def journl_rdf(req):
-    logg.debug("RePEc Journal RDF")
-
     req['Content-Type'] = 'text/plain'
 
     content = CollectionJournalContent(req)
@@ -72,8 +62,6 @@ def journl_rdf(req):
 
 
 def wpaper(req):
-    logg.debug("RePEc Paper")
-
     req['Content-Type'] = 'text/html'
 
     content = HTMLCollectionPaperContent(req)
@@ -81,8 +69,6 @@ def wpaper(req):
 
 
 def wpaper_rdf(req):
-    logg.debug("RePEc Paper RDF")
-
     req['Content-Type'] = 'text/plain'
 
     content = CollectionPaperContent(req)

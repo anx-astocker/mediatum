@@ -1,3 +1,5 @@
+import logging
+
 from mediatumtal import tal
 
 from core import config
@@ -5,6 +7,9 @@ from core.transition import httpstatus
 
 from web.repec import RDFContent, HTMLContent, CollectionMixin, Node
 from web.repec.redif import *
+
+
+log = logging.getLogger("repec")
 
 
 class HTMLCollectionContent(HTMLContent, CollectionMixin):

@@ -1,4 +1,4 @@
-import re
+import re, logging
 
 from datetime import datetime
 
@@ -10,6 +10,9 @@ from core.transition import httpstatus
 from contenttypes.document import Document
 
 from web.repec.redif import redif_encode_archive, redif_encode_series
+
+
+log = logging.getLogger("repec")
 
 
 _MATCH_REPEC_CODE = re.compile(r"^/repec/(?P<code>[\d\w]+)/((?P<code_check>[\d\w]+)(arch)|(seri))?.*$")
@@ -85,6 +88,7 @@ class CollectionMixin(object):
         root_url = self._get_root_url()
 
         if not node.has_object() or not isinstance(node, Document):
+            log.info("Node %s has no PDF attached" % node.id)
             return None
 
         if "system.origname" in node and node["system.origname"] == "1":
@@ -122,10 +126,12 @@ class CollectionMixin(object):
 
             # if we have a check-code in the url, it must equal the code value
             if repec_code_check is not None and repec_code_check != repec_code:
+                log.info("RePEc check code does not match")
                 raise AttributeError
 
         except (IndexError, AttributeError):
             # path does not contain a repec code
+            log.info("RePEc collection not found")
             self.status_code = httpstatus.HTTP_NOT_FOUND
             return None
 
@@ -133,6 +139,11 @@ class CollectionMixin(object):
         try:
             nodes = tree.getNodesByFieldValue(repec_code=repec_code)
             if len(nodes) != 1:
+                if len(nodes) > 1:
+                    log.info("More than one collection with code %s" % repec_code)
+                else:
+                    log.info("No collection with code %s" % repec_code)
+
                 raise tree.NoSuchNodeError
             node = nodes[0]
         except tree.NoSuchNodeError:
@@ -141,11 +152,13 @@ class CollectionMixin(object):
             return None
 
         if not acl.hasReadAccess(node):
+            log.info("No access to collection with code %s" % repec_code)
             # requested node in DB but no access, so set status to 403
             self.status_code = httpstatus.HTTP_FORBIDDEN
             return None
 
         if node.type not in ("directory", "collection"):
+            log.error("Node with code %s is not a collection" % repec_code)
             # requested node in DB and accessible, but not a collection type
             self.status_code = httpstatus.HTTP_INTERNAL_SERVER_ERROR
             return None
