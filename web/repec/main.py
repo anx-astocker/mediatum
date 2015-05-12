@@ -18,58 +18,53 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import logging
-
 from web.repec.content import *
 
 
-logg = logging.getLogger("repec")
-
-
 def collection(req):
-    req['Content-Type'] = 'text/html'
+    req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionContent(req)
     return content.respond()
 
 
 def collection_arch(req):
-    req['Content-Type'] = 'text/plain'
+    req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionArchiveContent(req)
     return content.respond()
 
 
 def collection_seri(req):
-    req['Content-Type'] = 'text/plain'
+    req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionSeriesContent(req)
     return content.respond()
 
 
 def journl(req):
-    req['Content-Type'] = 'text/html'
+    req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionJournalContent(req)
     return content.respond()
 
 
 def journl_rdf(req):
-    req['Content-Type'] = 'text/plain'
+    req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionJournalContent(req)
     return content.respond()
 
 
 def wpaper(req):
-    req['Content-Type'] = 'text/html'
+    req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionPaperContent(req)
     return content.respond()
 
 
 def wpaper_rdf(req):
-    req['Content-Type'] = 'text/plain'
+    req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionPaperContent(req)
     return content.respond()
