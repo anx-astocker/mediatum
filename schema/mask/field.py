@@ -148,12 +148,12 @@ class m_field(Metatype):
                                     language,
                                     template_from_caller=template_from_caller,
                                     mask=mask)[1],
-                                element).encode("utf8"))
+                                element))
                 elif fieldtype in ['upload']:
                     # passing mask necessary for fieldtype='upload'
-                    value = str(formatLongText(t.getFormatedValue(element, nodes[0], language, mask=mask)[1], element).encode("utf8"))
+                    value = str(formatLongText(t.getFormatedValue(element, nodes[0], language, mask=mask)[1], element))
                 else:
-                    value = str(formatLongText(t.getFormatedValue(element, nodes[0], language)[1], element).encode("utf8"))
+                    value = str(formatLongText(t.getFormatedValue(element, nodes[0], language)[1], element))
 
         if len(value.strip()) > 0:
             value += str(unit)

@@ -1069,6 +1069,8 @@ class Node(object):
         # fall-through
         raise AttributeError("Node %s of type has no attribute %s", self, name)
 
+    def getTechnAttributes(self):
+        return {}
 
     # fill hashmap with idlists of listvalues
     def getAllAttributeValues(self, attribute, access, schema=""):

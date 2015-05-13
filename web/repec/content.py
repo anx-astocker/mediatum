@@ -272,17 +272,17 @@ class CollectionPaperContent(RDFCollectionContent):
                 },
                 "_file_1": {
                     "File-URL": file_url,
-                    "File-Format": u"application/pdf",
-                    "File-Function": u"%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                    "File-Format": "application/pdf",
+                    "File-Function": "%s, %s" % (child_node.get("type"), child_node.get("year")) \
                         if child_node.get("type") and child_node.get("year") else None,
                 } if file_url else None,
                 "Title": child_node.get("title"),
                 "Abstract": child_node.get("description"),
-                "Length": u"%s pages" % child_node.get("pdf_pages") if child_node.get("pdf_pages") else None,
+                "Length": "%s pages" % child_node.get("pdf_pages") if child_node.get("pdf_pages") else None,
                 "Language": child_node.get("lang"),
-                "Creation-Date": u"%s-%s" % (creation_date.year, creation_date.month),
-                "Revision-Date": u"%s-%s" % (update_date.year, update_date.month),
-                "Publication-Status": u"Published by %s" % child_node.get("publisher") \
+                "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
+                "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
+                "Publication-Status": "Published by %s" % child_node.get("publisher") \
                     if child_node.get("publisher") else None,
                 "Number": child_node.node.id,
                 "Keywords": child_node.get("keywords"),
