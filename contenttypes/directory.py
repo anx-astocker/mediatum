@@ -246,9 +246,9 @@ class Directory(default.Default):
         field.set("valuelist", "thumbnail;list;text")
         ret.append(field)
 
-        if self.type.startswith("collection"):
+        if self.type.startswith(("collection", "directory")):
             # special fields for collections
-            field = tree.Node("repec_code", "metafield")
+            field = tree.Node("repec.code", "metafield")
             field.set("label", t(lang, "RePEc archive code"))
             field.set("language", "no")
             field.set("type", "text")

@@ -112,8 +112,8 @@ class CollectionArchiveContent(RDFCollectionContent):
         root_domain = config.get("host.name")
 
         collection_data = {
-            "Handle": "RePEc:%s" % collection_node["repec_code"],
-            "URL": "%s/repec/%s" % (self._get_root_url(), collection_node["repec_code"]),
+            "Handle": "RePEc:%s" % collection_node["repec.code"],
+            "URL": "%s/repec/%s" % (self._get_root_url(), collection_node["repec.code"]),
             "Name": collection_node.unicode_name,
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
@@ -148,7 +148,7 @@ class CollectionSeriesContent(RDFCollectionContent):
         collection_owner = self._get_node_owner(collection_node)
         root_domain = config.get("host.name")
 
-        repec_code = collection_node["repec_code"]
+        repec_code = collection_node["repec.code"]
         provider_name = self._get_inherited_attribute_value(collection_node, "tuminstid")
         provider_id = str(provider_name).lower()
 
@@ -206,14 +206,18 @@ class CollectionJournalContent(RDFCollectionContent):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        child_nodes = self.active_collection.get_all_child_nodes()
-        repec_code = self.active_collection.node["repec_code"]
+        child_nodes = self.active_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Article"})
+        repec_code = self.active_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
             # skip file if mandatory fields are not present
             if None in (child_node.get("author.fullname"), child_node.get("title")):
                 continue
+
+            creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
+            update_date = Node._get_datetime_from_iso_8601(child_node.get("updatetime"))
+            file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
                 "_author_1": {
@@ -223,13 +227,25 @@ class CollectionJournalContent(RDFCollectionContent):
                     "Author-Email": child_node.get("author.public_email"),
                     "Author-Workplace-Name": child_node.get("author.origin"),
                 },
+                "_file_1": {
+                    "File-URL": file_url,
+                    "File-Format": "application/pdf",
+                    "File-Function": "%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                        if child_node.get("type") and child_node.get("year") else None,
+                } if file_url else None,
                 "Title": child_node.get("title"),
-                "Pages": "1-2",  # TODO: real data here
+                "Pages": child_node.get("repec.article.pages"),
+                "Volume": child_node.get("repec.article.volume"),
+                "Issue": child_node.get("repec.article.issue"),
+                "Classification-JEL": child_node.get("repec.classification"),
                 "Number": child_node.node.id,
+                "Year": child_node.get("year") if child_node.get("year") else None,
                 "Keywords": child_node.get("keywords"),
-                "Handle": "RePEc:%s:journl:%s:1-2" % (repec_code, child_node.node.id),  # TODO: use real pages value here
+                "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
+                "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
+                "Handle": "RePEc:%s:journl:%s" % (repec_code, child_node.node.id),
             }
-            rdf_content.append(redif_encode_paper(file_data))
+            rdf_content.append(redif_encode_article(file_data))
 
         return "\n\n".join(rdf_content)
 
@@ -249,8 +265,8 @@ class CollectionPaperContent(RDFCollectionContent):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        child_nodes = self.active_collection.get_all_child_nodes()
-        repec_code = self.active_collection.node["repec_code"]
+        child_nodes = self.active_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Paper"})
+        repec_code = self.active_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
@@ -280,6 +296,7 @@ class CollectionPaperContent(RDFCollectionContent):
                 "Abstract": child_node.get("description"),
                 "Length": "%s pages" % child_node.get("pdf_pages") if child_node.get("pdf_pages") else None,
                 "Language": child_node.get("lang"),
+                "Classification-JEL": child_node.get("repec.classification"),
                 "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
                 "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
                 "Publication-Status": "Published by %s" % child_node.get("publisher") \
@@ -288,6 +305,6 @@ class CollectionPaperContent(RDFCollectionContent):
                 "Keywords": child_node.get("keywords"),
                 "Handle": "RePEc:%s:wpaper:%s" % (repec_code, child_node.node.id),
             }
-            rdf_content.append(redif_encode_article(file_data))
+            rdf_content.append(redif_encode_paper(file_data))
 
         return "\n\n".join(rdf_content)

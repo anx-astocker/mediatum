@@ -137,7 +137,7 @@ class CollectionMixin(object):
 
         # try to load the node
         try:
-            nodes = tree.getNodesByFieldValue(repec_code=repec_code)
+            nodes = tree.getNodesByFieldValue(**{"repec.code": repec_code})
             if len(nodes) != 1:
                 if len(nodes) > 1:
                     log.info("More than one collection with code %s" % repec_code)
@@ -202,6 +202,9 @@ class Node(RDFContent):
 
     def get_all_child_nodes(self):
         return self.__get_child_nodes(lambda: tree.getAllContainerChildrenAbs(self.node, list()))
+
+    def get_all_child_nodes_by_field_value(self, **kwargs):
+        return self.__get_child_nodes(lambda: tree.getAllContainerChildrenByFieldValueAbs(self.node, list(), **kwargs))
 
     def get_child_nodes(self):
         return self.__get_child_nodes(self.node.getContentChildren)

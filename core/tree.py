@@ -129,6 +129,16 @@ def getAllContainerChildrenAbs(node, count=[]):  # returns a list with children,
     return count
 
 
+def getAllContainerChildrenByFieldValueAbs(node, count=None, **kwargs):
+    if count is None:
+        count = list()
+
+    for n in node.getContainerChildren():
+        count = getAllContainerChildrenByFieldValueAbs(n, count, **kwargs)
+    count.extend(node.getChildrenByFieldValue(**kwargs).ids)
+    return count
+
+
 def getAllContainerChildren(node):
     return len(list(set(getAllContainerChildrenAbs(node, []))))  # get number of children
     # return getAllContainerChildrenNum(node, 0) # get number of children (faster)
@@ -887,6 +897,10 @@ class Node(object):
     def getContentChildren(self):
         id = db.getContentChildren(self.id)
         return NodeList(id)
+
+    def getChildrenByFieldValue(self, **kwargs):
+        ids = db.get_nodes_by_field_value(parent_id=self.id, **kwargs)
+        return NodeList(ids)
 
     """ get all parents of this node """
 
