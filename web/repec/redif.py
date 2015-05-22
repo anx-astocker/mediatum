@@ -87,3 +87,10 @@ def redif_encode_article(data):
         "Template-Type: ReDIF-Article 1.0",
         _redif_encode(data)
     ))
+
+
+def redif_encode_book(data):
+    return "\n".join((
+        "Template-Type: ReDIF-Book 1.0",
+        _redif_encode(data)
+    ))

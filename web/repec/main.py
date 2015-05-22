@@ -68,3 +68,18 @@ def wpaper_rdf(req):
 
     content = CollectionPaperContent(req)
     return content.respond()
+
+
+
+def ecbook(req):
+    req['Content-Type'] = 'text/html; charset=utf-8'
+
+    content = HTMLCollectionBookContent(req)
+    return content.respond()
+
+
+def ecbook_rdf(req):
+    req['Content-Type'] = 'text/plain; charset=utf-8'
+
+    content = CollectionBookContent(req)
+    return content.respond()

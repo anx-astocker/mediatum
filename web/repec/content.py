@@ -32,6 +32,7 @@ class HTMLCollectionContent(HTMLContent, CollectionMixin):
                 ("./aaaseri.rdf", "aaaseri.rdf"),
                 ("./journl/", "journl"),
                 ("./wpaper/", "wpaper"),
+                ("./ecbook/", "ecbook"),
             ]
         }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
@@ -74,6 +75,27 @@ class HTMLCollectionJournalContent(HTMLContent, CollectionMixin):
         return tal.processTAL({
             "items": [
                 ("./journals.rdf", "journals.rdf"),
+            ]
+        }, file="web/repec/templates/directory_browsing.html", request=self.request)
+
+
+class HTMLCollectionBookContent(HTMLContent, CollectionMixin):
+    """
+    Lists the content of the RePEc ecbook as HTML.
+    """
+
+    def __init__(self, req):
+        super(HTMLCollectionBookContent, self).__init__(req)
+
+        self.status_code = httpstatus.HTTP_OK
+
+    def status(self):
+        return self.status_code
+
+    def html(self):
+        return tal.processTAL({
+            "items": [
+                ("./books.rdf", "books.rdf"),
             ]
         }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
@@ -188,7 +210,25 @@ class CollectionSeriesContent(RDFCollectionContent):
 
         journl_series_rdf = redif_encode_series(collection_data)
 
-        return "\n\n".join((wpaper_series_rdf, journl_series_rdf))
+        collection_data = {
+            "Name": "Books",
+            "Provider-Name": "TUM, %s" % provider_name,
+            "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
+            "Maintainer-Name": "Unknown",
+            "Maintainer-Email": "nomail@%s" % root_domain,
+            "Type": "ReDIF-Book",
+            "Handle": "RePEc:%s:ecbook" % repec_code,
+        }
+
+        if collection_owner:
+            collection_data.update({
+                "Maintainer-Name": collection_owner.unicode_name,
+                "Maintainer-Email": collection_owner["email"],
+            })
+
+        ecbook_series_rdf = redif_encode_series(collection_data)
+
+        return "\n\n".join((wpaper_series_rdf, journl_series_rdf, ecbook_series_rdf))
 
 
 class CollectionJournalContent(RDFCollectionContent):
@@ -234,9 +274,9 @@ class CollectionJournalContent(RDFCollectionContent):
                         if child_node.get("type") and child_node.get("year") else None,
                 } if file_url else None,
                 "Title": child_node.get("title"),
-                "Pages": child_node.get("repec.article.pages"),
-                "Volume": child_node.get("repec.article.volume"),
-                "Issue": child_node.get("repec.article.issue"),
+                "Pages": child_node.get("repec.pages"),
+                "Volume": child_node.get("repec.volume"),
+                "Issue": child_node.get("repec.issue"),
                 "Classification-JEL": child_node.get("repec.classification"),
                 "Number": child_node.node.id,
                 "Year": child_node.get("year") if child_node.get("year") else None,
@@ -306,5 +346,68 @@ class CollectionPaperContent(RDFCollectionContent):
                 "Handle": "RePEc:%s:wpaper:%s" % (repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_paper(file_data))
+
+        return "\n\n".join(rdf_content)
+
+
+
+class CollectionBookContent(RDFCollectionContent):
+    """
+    Class used for generating RDF of books.
+    """
+
+    def __init__(self, req):
+        super(CollectionBookContent, self).__init__(req, httpstatus.HTTP_INTERNAL_SERVER_ERROR)
+
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
+
+    def rdf(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        child_nodes = self.active_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Book"})
+        repec_code = self.active_collection.node["repec.code"]
+        rdf_content = []
+
+        for child_node in child_nodes:
+            # skip file if mandatory fields are not present
+            if None in (child_node.get("author.fullname"), child_node.get("title")):
+                continue
+
+            creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
+            update_date = Node._get_datetime_from_iso_8601(child_node.get("updatetime"))
+            file_url = self._get_document_pdf_url(child_node.node)
+
+            file_data = {
+                "_editor_1": {
+                    "Editor-Name": child_node.get("author.fullname"),
+                    "Editor-Name-First": child_node.get("author.firstname"),
+                    "Editor-Name-Last": child_node.get("author.surname"),
+                    "Editor-Email": child_node.get("author.public_email"),
+                    "Editor-Workplace-Name": child_node.get("author.origin"),
+                },
+                "_file_1": {
+                    "File-URL": file_url,
+                    "File-Format": "application/pdf",
+                    "File-Function": "%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                        if child_node.get("type") and child_node.get("year") else None,
+                } if file_url else None,
+                "Title": child_node.get("title"),
+                "Abstract": child_node.get("description"),
+                "Language": child_node.get("lang"),
+                "Pages": child_node.get("repec.pages"),
+                "Volume": child_node.get("repec.volume"),
+                "Issue": child_node.get("repec.issue"),
+                "Classification-JEL": child_node.get("repec.classification"),
+                "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
+                "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
+                "Publication-Status": "Published by %s" % child_node.get("publisher") \
+                    if child_node.get("publisher") else None,
+                "Number": child_node.node.id,
+                "Keywords": child_node.get("keywords"),
+                "Handle": "RePEc:%s:ecbook:%s" % (repec_code, child_node.node.id),
+            }
+            rdf_content.append(redif_encode_book(file_data))
 
         return "\n\n".join(rdf_content)
