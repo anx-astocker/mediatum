@@ -1,5 +1,7 @@
 import logging
 
+from collections import OrderedDict
+
 from mediatumtal import tal
 
 from core import config
@@ -136,7 +138,7 @@ class CollectionArchiveContent(RDFCollectionContent):
         collection_data = {
             "Handle": "RePEc:%s" % collection_node["repec.code"],
             "URL": "%s/repec/%s" % (self._get_root_url(), collection_node["repec.code"]),
-            "Name": collection_node.unicode_name,
+            "Name": collection_node.unicode_name if collection_node.unicode_name else "Unknown name",
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
             "Restriction": None,
@@ -176,8 +178,7 @@ class CollectionSeriesContent(RDFCollectionContent):
 
         collection_data = {
             "Name": "Working Papers",
-            "Provider-Name": "TUM, %s" % provider_name,
-            "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
+            "Provider-Name": provider_name,
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
             "Type": "ReDIF-Paper",
@@ -256,23 +257,22 @@ class CollectionJournalContent(RDFCollectionContent):
                 continue
 
             creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
-            update_date = Node._get_datetime_from_iso_8601(child_node.get("updatetime"))
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
-                "_author_1": {
-                    "Author-Name": child_node.get("author.fullname"),
-                    "Author-Name-First": child_node.get("author.firstname"),
-                    "Author-Name-Last": child_node.get("author.surname"),
-                    "Author-Email": child_node.get("author.public_email"),
-                    "Author-Workplace-Name": child_node.get("author.origin"),
-                },
-                "_file_1": {
-                    "File-URL": file_url,
-                    "File-Format": "application/pdf",
-                    "File-Function": "%s, %s" % (child_node.get("type"), child_node.get("year")) \
-                        if child_node.get("type") and child_node.get("year") else None,
-                } if file_url else None,
+                "_author_1": OrderedDict([
+                    ("Author-Name", child_node.get("author.fullname")),
+                    ("Author-Name-First", child_node.get("author.firstname")),
+                    ("Author-Name-Last", child_node.get("author.surname")),
+                    ("Author-Email", child_node.get("author.public_email")),
+                    ("Author-Workplace-Name", child_node.get("author.origin")),
+                ]),
+                "_file_1": OrderedDict([
+                    ("File-URL", file_url),
+                    ("File-Format", "application/pdf"),
+                    ("File-Function", "%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                        if child_node.get("type") and child_node.get("year") else None),
+                ]) if file_url else None,
                 "Title": child_node.get("title"),
                 "Pages": child_node.get("repec.pages"),
                 "Volume": child_node.get("repec.volume"),
@@ -281,8 +281,7 @@ class CollectionJournalContent(RDFCollectionContent):
                 "Number": child_node.node.id,
                 "Year": child_node.get("year") if child_node.get("year") else None,
                 "Keywords": child_node.get("keywords"),
-                "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
-                "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
+                "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
                 "Handle": "RePEc:%s:journl:%s" % (repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_article(file_data))
@@ -319,26 +318,26 @@ class CollectionPaperContent(RDFCollectionContent):
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
-                "_author_1": {
-                    "Author-Name": child_node.get("author.fullname"),
-                    "Author-Name-First": child_node.get("author.firstname"),
-                    "Author-Name-Last": child_node.get("author.surname"),
-                    "Author-Email": child_node.get("author.public_email"),
-                    "Author-Workplace-Name": child_node.get("author.origin"),
-                },
-                "_file_1": {
-                    "File-URL": file_url,
-                    "File-Format": "application/pdf",
-                    "File-Function": "%s, %s" % (child_node.get("type"), child_node.get("year")) \
-                        if child_node.get("type") and child_node.get("year") else None,
-                } if file_url else None,
+                "_author_1": OrderedDict([
+                    ("Author-Name", child_node.get("author.fullname")),
+                    ("Author-Name-First", child_node.get("author.firstname")),
+                    ("Author-Name-Last", child_node.get("author.surname")),
+                    ("Author-Email", child_node.get("author.public_email")),
+                    ("Author-Workplace-Name", child_node.get("author.origin")),
+                ]),
+                "_file_1": OrderedDict([
+                    ("File-URL", file_url),
+                    ("File-Format", "application/pdf"),
+                    ("File-Function", "%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                        if child_node.get("type") and child_node.get("year") else None),
+                ]) if file_url else None,
                 "Title": child_node.get("title"),
                 "Abstract": child_node.get("description"),
                 "Length": "%s pages" % child_node.get("pdf_pages") if child_node.get("pdf_pages") else None,
                 "Language": child_node.get("lang"),
                 "Classification-JEL": child_node.get("repec.classification"),
-                "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
-                "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
+                "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
+                "Revision-Date": "%04d-%02d-%02d" % (update_date.year, update_date.month, update_date.day),
                 "Publication-Status": "Published by %s" % child_node.get("publisher") \
                     if child_node.get("publisher") else None,
                 "Number": child_node.node.id,
@@ -376,23 +375,22 @@ class CollectionBookContent(RDFCollectionContent):
                 continue
 
             creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
-            update_date = Node._get_datetime_from_iso_8601(child_node.get("updatetime"))
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
-                "_editor_1": {
-                    "Editor-Name": child_node.get("author.fullname"),
-                    "Editor-Name-First": child_node.get("author.firstname"),
-                    "Editor-Name-Last": child_node.get("author.surname"),
-                    "Editor-Email": child_node.get("author.public_email"),
-                    "Editor-Workplace-Name": child_node.get("author.origin"),
-                },
-                "_file_1": {
-                    "File-URL": file_url,
-                    "File-Format": "application/pdf",
-                    "File-Function": "%s, %s" % (child_node.get("type"), child_node.get("year")) \
-                        if child_node.get("type") and child_node.get("year") else None,
-                } if file_url else None,
+                "_editor_1": OrderedDict([
+                    ("Editor-Name", child_node.get("author.fullname")),
+                    ("Editor-Name-First", child_node.get("author.firstname")),
+                    ("Editor-Name-Last", child_node.get("author.surname")),
+                    ("Editor-Email", child_node.get("author.public_email")),
+                    ("Editor-Workplace-Name", child_node.get("author.origin")),
+                ]),
+                "_file_1": OrderedDict([
+                    ("File-URL", file_url),
+                    ("File-Format", "application/pdf"),
+                    ("File-Function", "%s, %s" % (child_node.get("type"), child_node.get("year")) \
+                        if child_node.get("type") and child_node.get("year") else None),
+                ]) if file_url else None,
                 "Title": child_node.get("title"),
                 "Abstract": child_node.get("description"),
                 "Language": child_node.get("lang"),
@@ -400,8 +398,7 @@ class CollectionBookContent(RDFCollectionContent):
                 "Volume": child_node.get("repec.volume"),
                 "Issue": child_node.get("repec.issue"),
                 "Classification-JEL": child_node.get("repec.classification"),
-                "Creation-Date": "%s-%s" % (creation_date.year, creation_date.month),
-                "Revision-Date": "%s-%s" % (update_date.year, update_date.month),
+                "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
                 "Publication-Status": "Published by %s" % child_node.get("publisher") \
                     if child_node.get("publisher") else None,
                 "Number": child_node.node.id,
