@@ -195,7 +195,7 @@ class CollectionSeriesContent(RDFCollectionContent):
 
         collection_data = {
             "Name": "Journal",
-            "Provider-Name": "TUM, %s" % provider_name,
+            "Provider-Name": provider_name,
             "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
@@ -213,7 +213,7 @@ class CollectionSeriesContent(RDFCollectionContent):
 
         collection_data = {
             "Name": "Books",
-            "Provider-Name": "TUM, %s" % provider_name,
+            "Provider-Name": provider_name,
             "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,

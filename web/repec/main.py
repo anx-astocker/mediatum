@@ -18,7 +18,30 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import re
+
 from web.repec.content import *
+
+
+def repec(req):
+    patterns = {
+        r"/repec/[\d\w]+/wpaper/$": wpaper,
+        r"/repec/[\d\w]+/wpaper/papers.rdf$": wpaper_rdf,
+        r"/repec/[\d\w]+/journl/$": journl,
+        r"/repec/[\d\w]+/journl/journals.rdf$": journl_rdf,
+        r"/repec/[\d\w]+/ecbook/$": ecbook,
+        r"/repec/[\d\w]+/ecbook/books.rdf$": ecbook_rdf,
+        r"/repec/[\d\w]+/[\d\w]+seri.rdf$": collection_seri,
+        r"/repec/[\d\w]+/[\d\w]+arch.rdf$": collection_arch,
+        r"/repec/[\d\w]+/$": collection,
+    }
+    url = req.fullpath
+
+    for pattern, handler in patterns.items():
+        if re.match(pattern, url):
+            return handler(req)
+
+    return req.error(404, "Unknown RePEc URL")
 
 
 def collection(req):

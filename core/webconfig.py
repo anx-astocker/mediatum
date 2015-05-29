@@ -130,15 +130,7 @@ def initContexts():
 
     # === RePEc ===
     file = context.addFile("web/repec/main.py")
-    file.addHandler("wpaper").addPattern("/repec/[\d\w]+/wpaper/$")
-    file.addHandler("wpaper_rdf").addPattern("/repec/[\d\w]+/wpaper/papers.rdf$")
-    file.addHandler("journl").addPattern("/repec/[\d\w]+/journl/$")
-    file.addHandler("journl_rdf").addPattern("/repec/[\d\w]+/journl/journals.rdf$")
-    file.addHandler("ecbook").addPattern("/repec/[\d\w]+/ecbook/$")
-    file.addHandler("ecbook_rdf").addPattern("/repec/[\d\w]+/ecbook/books.rdf$")
-    file.addHandler("collection_seri").addPattern("/repec/[\d\w]+/[\d\w]+seri.rdf$")
-    file.addHandler("collection_arch").addPattern("/repec/[\d\w]+/[\d\w]+arch.rdf$")
-    file.addHandler("collection").addPattern("/repec/[\d\w]+/$")
+    file.addHandler("repec").addPattern("/repec/.*")
 
     # === workflow ===
     #file = context.addFile("web/publish/main.py")
