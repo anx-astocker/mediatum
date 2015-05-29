@@ -27,15 +27,15 @@ from web.repec.content import HTMLCollectionContent, CollectionArchiveContent, C
 
 def repec(req):
     patterns = {
-        r"/repec/[\d\w]+/wpaper/$": wpaper,
-        r"/repec/[\d\w]+/wpaper/papers.rdf$": wpaper_rdf,
-        r"/repec/[\d\w]+/journl/$": journl,
-        r"/repec/[\d\w]+/journl/journals.rdf$": journl_rdf,
-        r"/repec/[\d\w]+/ecbook/$": ecbook,
-        r"/repec/[\d\w]+/ecbook/books.rdf$": ecbook_rdf,
-        r"/repec/[\d\w]+/[\d\w]+seri.rdf$": collection_seri,
-        r"/repec/[\d\w]+/[\d\w]+arch.rdf$": collection_arch,
-        r"/repec/[\d\w]+/$": collection,
+        r"/repec/[\d\w]+/wpaper/$": _wpaper,
+        r"/repec/[\d\w]+/wpaper/papers.rdf$": _wpaper_rdf,
+        r"/repec/[\d\w]+/journl/$": _journl,
+        r"/repec/[\d\w]+/journl/journals.rdf$": _journl_rdf,
+        r"/repec/[\d\w]+/ecbook/$": _ecbook,
+        r"/repec/[\d\w]+/ecbook/books.rdf$": _ecbook_rdf,
+        r"/repec/[\d\w]+/[\d\w]+seri.rdf$": _collection_seri,
+        r"/repec/[\d\w]+/[\d\w]+arch.rdf$": _collection_arch,
+        r"/repec/[\d\w]+/$": _collection,
     }
     url = req.fullpath
 
@@ -46,49 +46,49 @@ def repec(req):
     return req.error(404, "Unknown RePEc URL")
 
 
-def collection(req):
+def _collection(req):
     req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionContent(req)
     return content.respond()
 
 
-def collection_arch(req):
+def _collection_arch(req):
     req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionArchiveContent(req)
     return content.respond()
 
 
-def collection_seri(req):
+def _collection_seri(req):
     req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionSeriesContent(req)
     return content.respond()
 
 
-def journl(req):
+def _journl(req):
     req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionJournalContent(req)
     return content.respond()
 
 
-def journl_rdf(req):
+def _journl_rdf(req):
     req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionJournalContent(req)
     return content.respond()
 
 
-def wpaper(req):
+def _wpaper(req):
     req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionPaperContent(req)
     return content.respond()
 
 
-def wpaper_rdf(req):
+def _wpaper_rdf(req):
     req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionPaperContent(req)
@@ -96,14 +96,14 @@ def wpaper_rdf(req):
 
 
 
-def ecbook(req):
+def _ecbook(req):
     req['Content-Type'] = 'text/html; charset=utf-8'
 
     content = HTMLCollectionBookContent(req)
     return content.respond()
 
 
-def ecbook_rdf(req):
+def _ecbook_rdf(req):
     req['Content-Type'] = 'text/plain; charset=utf-8'
 
     content = CollectionBookContent(req)
