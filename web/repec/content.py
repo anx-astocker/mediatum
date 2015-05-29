@@ -8,7 +8,8 @@ from core import config
 from core.transition import httpstatus
 
 from web.repec import RDFContent, HTMLContent, CollectionMixin, Node
-from web.repec.redif import *
+from web.repec.redif import redif_encode_archive, redif_encode_series, redif_encode_article, \
+    redif_encode_paper, redif_encode_book
 
 
 log = logging.getLogger("repec")

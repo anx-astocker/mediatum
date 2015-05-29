@@ -20,7 +20,9 @@
 """
 import re
 
-from web.repec.content import *
+from web.repec.content import HTMLCollectionContent, CollectionArchiveContent, CollectionSeriesContent, \
+    HTMLCollectionJournalContent, CollectionJournalContent, HTMLCollectionPaperContent, \
+    CollectionPaperContent, HTMLCollectionBookContent, CollectionBookContent
 
 
 def repec(req):
