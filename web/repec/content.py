@@ -140,7 +140,7 @@ class CollectionArchiveContent(RDFCollectionContent):
 
         collection_data = {
             "Handle": "RePEc:%s" % collection_node["repec.code"],
-            "URL": "%s/repec/%s" % (self._get_root_url(), collection_node["repec.code"]),
+            "URL": "%s/repec/%s/" % (self._get_root_url(), collection_node["repec.code"]),
             "Name": collection_node.unicode_name if collection_node.unicode_name else "Unknown name",
             "Maintainer-Name": "Unknown",
             "Maintainer-Email": "nomail@%s" % root_domain,
