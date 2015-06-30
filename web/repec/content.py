@@ -1,4 +1,6 @@
 import logging
+import unicodedata
+import re
 
 from collections import OrderedDict
 
@@ -165,6 +167,15 @@ class CollectionSeriesContent(RDFCollectionContent):
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
 
+    @staticmethod
+    def _slugify(val):
+        # normalise non-ascii chars to an ascii representation
+        if isinstance(val, unicode):
+            val = unicodedata.normalize('NFKD', val).encode('ascii', 'ignore')
+
+        val = re.sub('[^\w]', '', val).strip().lower()
+        return val
+
     def rdf(self):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
@@ -174,8 +185,10 @@ class CollectionSeriesContent(RDFCollectionContent):
         root_domain = config.get("host.name")
 
         repec_code = collection_node["repec.code"]
-        provider_name = self._get_inherited_attribute_value(collection_node, "tuminstid")
-        provider_id = str(provider_name).lower()
+        provider_name = self._get_inherited_attribute_value(
+            collection_node, "repec.provider", default="Unknown Provider",
+        )
+        provider_id = str(self._slugify(provider_name)).lower()
 
         collection_data = {
             "Name": "Working Papers",

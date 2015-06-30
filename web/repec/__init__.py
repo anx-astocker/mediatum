@@ -53,7 +53,10 @@ class HTMLContent(object):
 
 class CollectionMixin(object):
 
-    def _get_inherited_attribute_value(self, node, attr):
+    class __NoDefault__:
+        pass
+
+    def _get_inherited_attribute_value(self, node, attr, default=__NoDefault__):
         try:
             # try to get the attr from given node
             return node[attr]
@@ -62,12 +65,14 @@ class CollectionMixin(object):
                 for parent in node.getParents():
                     try:
                         # go up in tree
-                        return self._get_inherited_attribute_value(parent, attr)
+                        return self._get_inherited_attribute_value(parent, attr, default)
                     except KeyError:
                         pass
 
-        # attr does not exist in node tree
-        raise KeyError
+        if default == self.__NoDefault__:
+            # attr does not exist in node tree
+            raise KeyError
+        return default
 
     def _get_node_owner(self, node):
         try:
