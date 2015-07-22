@@ -180,6 +180,7 @@ class Node(RDFContent):
     def __init__(self, req, collection_content, node):
         super(Node, self).__init__(req)
 
+        self.mapping = {}
         self.collection_content = collection_content
         self.node = node
 
@@ -201,9 +202,37 @@ class Node(RDFContent):
     def __delitem__(self, key):
         return self.node.__delitem__(key)
 
+    def apply_export_mapping(self, mask_name):
+        mask = self.node.getMask(mask_name)
+        attribute_mapping = {}
+
+        # check if mask exists - disable mapping if it does not exist
+        if not mask:
+            self.mapping = {}
+            return
+
+        for mask_field in mask.getMaskFields():
+            mapping_field = tree.getNode(mask_field.get("mappingfield"))
+            attribute = tree.getNode(mask_field.get("attribute"))
+
+            # skip if mapping or target attribute not found
+            if None in (mapping_field, attribute):
+                continue
+
+            attribute_mapping[mapping_field.name] = self.get(attribute.name)
+
+        self.mapping = attribute_mapping
+
     def get(self, key, default=None):
+        # check if field in mapping
+        if key in self.mapping:
+            return self.mapping[key]
+
+        # key in mapping not found - check if is node attribute
         if key in self:
             return self[key]
+
+        # desired key not found - return default
         return default
 
     def get_all_child_nodes(self):

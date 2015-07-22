@@ -266,35 +266,37 @@ class CollectionJournalContent(RDFCollectionContent):
         rdf_content = []
 
         for child_node in child_nodes:
+            child_node.apply_export_mapping("repec-export-article")
+
             # skip file if mandatory fields are not present
-            if None in (child_node.get("author.fullname"), child_node.get("title")):
+            if None in (child_node.get("Author-Name"), child_node.get("Title")):
                 continue
 
-            creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
+            creation_date = Node._get_datetime_from_iso_8601(child_node.get("Creation-Date"))
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
                 "_author_1": OrderedDict([
-                    ("Author-Name", child_node.get("author.fullname")),
-                    ("Author-Name-First", child_node.get("author.firstname")),
-                    ("Author-Name-Last", child_node.get("author.surname")),
-                    ("Author-Email", child_node.get("author.public_email")),
-                    ("Author-Workplace-Name", child_node.get("author.origin")),
+                    ("Author-Name", child_node.get("Author-Name")),
+                    ("Author-Name-First", child_node.get("Author-Name-First")),
+                    ("Author-Name-Last", child_node.get("Author-Name-Last")),
+                    ("Author-Email", child_node.get("Author-Email")),
+                    ("Author-Workplace-Name", child_node.get("Author-Workplace-Name")),
                 ]),
                 "_file_1": OrderedDict([
                     ("File-URL", file_url),
-                    ("File-Format", "application/pdf"),
-                    ("File-Function", "%s, %s" % (child_node.get("type"), child_node.get("year")) \
-                        if child_node.get("type") and child_node.get("year") else None),
+                    ("File-Format", child_node.get("File-Format", "application/pdf")),
+                    ("File-Function", "%s, %s" % (child_node.get("File-Function"), child_node.get("Year")) \
+                        if child_node.get("File-Function") and child_node.get("Year") else None),
                 ]) if file_url else None,
-                "Title": child_node.get("title"),
-                "Pages": child_node.get("repec.pages"),
-                "Volume": child_node.get("repec.volume"),
-                "Issue": child_node.get("repec.issue"),
-                "Classification-JEL": child_node.get("repec.classification"),
+                "Title": child_node.get("Title"),
+                "Pages": child_node.get("Pages"),
+                "Volume": child_node.get("Volume"),
+                "Issue": child_node.get("Issue"),
+                "Classification-JEL": child_node.get("Classification-JEL"),
                 "Number": child_node.node.id,
-                "Year": child_node.get("year") if child_node.get("year") else None,
-                "Keywords": child_node.get("keywords"),
+                "Year": child_node.get("Year") if child_node.get("Year") else None,
+                "Keywords": child_node.get("Keywords"),
                 "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
                 "Handle": "RePEc:%s:journl:%s" % (repec_code, child_node.node.id),
             }
@@ -323,45 +325,46 @@ class CollectionPaperContent(RDFCollectionContent):
         rdf_content = []
 
         for child_node in child_nodes:
+            child_node.apply_export_mapping("repec-export-paper")
+
             # skip file if mandatory fields are not present
-            if None in (child_node.get("author.fullname"), child_node.get("title")):
+            if None in (child_node.get("Author-Name"), child_node.get("Title")):
                 continue
 
-            creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
-            update_date = Node._get_datetime_from_iso_8601(child_node.get("updatetime"))
+            creation_date = Node._get_datetime_from_iso_8601(child_node.get("Creation-Date"))
+            update_date = Node._get_datetime_from_iso_8601(child_node.get("Revision-Date"))
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
                 "_author_1": OrderedDict([
-                    ("Author-Name", child_node.get("author.fullname")),
-                    ("Author-Name-First", child_node.get("author.firstname")),
-                    ("Author-Name-Last", child_node.get("author.surname")),
-                    ("Author-Email", child_node.get("author.public_email")),
-                    ("Author-Workplace-Name", child_node.get("author.origin")),
+                    ("Author-Name", child_node.get("Author-Name")),
+                    ("Author-Name-First", child_node.get("Author-Name-First")),
+                    ("Author-Name-Last", child_node.get("Author-Name-Last")),
+                    ("Author-Email", child_node.get("Author-Email")),
+                    ("Author-Workplace-Name", child_node.get("Author-Workplace-Name")),
                 ]),
                 "_file_1": OrderedDict([
                     ("File-URL", file_url),
-                    ("File-Format", "application/pdf"),
-                    ("File-Function", "%s, %s" % (child_node.get("type"), child_node.get("year")) \
-                        if child_node.get("type") and child_node.get("year") else None),
+                    ("File-Format", child_node.get("File-Format", "application/pdf")),
+                    ("File-Function", "%s, %s" % (child_node.get("File-Function"), child_node.get("Year")) \
+                        if child_node.get("File-Function") and child_node.get("Year") else None),
                 ]) if file_url else None,
-                "Title": child_node.get("title"),
-                "Abstract": child_node.get("description"),
-                "Length": "%s pages" % child_node.get("pdf_pages") if child_node.get("pdf_pages") else None,
-                "Language": child_node.get("lang"),
-                "Classification-JEL": child_node.get("repec.classification"),
+                "Title": child_node.get("Title"),
+                "Abstract": child_node.get("Abstract"),
+                "Length": "%s pages" % child_node.get("Length") if child_node.get("Length") else None,
+                "Language": child_node.get("Language"),
+                "Classification-JEL": child_node.get("Classification-JEL"),
                 "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
                 "Revision-Date": "%04d-%02d-%02d" % (update_date.year, update_date.month, update_date.day),
-                "Publication-Status": "Published by %s" % child_node.get("publisher") \
-                    if child_node.get("publisher") else None,
+                "Publication-Status": "Published by %s" % child_node.get("Publication-Status") \
+                    if child_node.get("Publication-Status") else None,
                 "Number": child_node.node.id,
-                "Keywords": child_node.get("keywords"),
+                "Keywords": child_node.get("Keywords"),
                 "Handle": "RePEc:%s:wpaper:%s" % (repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_paper(file_data))
 
         return "\n\n".join(rdf_content)
-
 
 
 class CollectionBookContent(RDFCollectionContent):
@@ -384,39 +387,41 @@ class CollectionBookContent(RDFCollectionContent):
         rdf_content = []
 
         for child_node in child_nodes:
+            child_node.apply_export_mapping("repec-export-book")
+
             # skip file if mandatory fields are not present
-            if None in (child_node.get("author.fullname"), child_node.get("title")):
+            if None in (child_node.get("Editor-Name"), child_node.get("Title")):
                 continue
 
-            creation_date = Node._get_datetime_from_iso_8601(child_node.get("creationtime"))
+            creation_date = Node._get_datetime_from_iso_8601(child_node.get("Creation-Date"))
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
                 "_editor_1": OrderedDict([
-                    ("Editor-Name", child_node.get("author.fullname")),
-                    ("Editor-Name-First", child_node.get("author.firstname")),
-                    ("Editor-Name-Last", child_node.get("author.surname")),
-                    ("Editor-Email", child_node.get("author.public_email")),
-                    ("Editor-Workplace-Name", child_node.get("author.origin")),
+                    ("Editor-Name", child_node.get("Editor-Name")),
+                    ("Editor-Name-First", child_node.get("Editor-Name-First")),
+                    ("Editor-Name-Last", child_node.get("Editor-Name-Last")),
+                    ("Editor-Email", child_node.get("Editor-Email")),
+                    ("Editor-Workplace-Name", child_node.get("Editor-Workplace-Name")),
                 ]),
                 "_file_1": OrderedDict([
                     ("File-URL", file_url),
-                    ("File-Format", "application/pdf"),
-                    ("File-Function", "%s, %s" % (child_node.get("type"), child_node.get("year")) \
-                        if child_node.get("type") and child_node.get("year") else None),
+                    ("File-Format", child_node.get("File-Format", "application/pdf")),
+                    ("File-Function", "%s, %s" % (child_node.get("File-Function"), child_node.get("Year")) \
+                        if child_node.get("Type") and child_node.get("Year") else None),
                 ]) if file_url else None,
-                "Title": child_node.get("title"),
-                "Abstract": child_node.get("description"),
-                "Language": child_node.get("lang"),
-                "Pages": child_node.get("repec.pages"),
-                "Volume": child_node.get("repec.volume"),
-                "Issue": child_node.get("repec.issue"),
-                "Classification-JEL": child_node.get("repec.classification"),
+                "Title": child_node.get("Title"),
+                "Abstract": child_node.get("Abstract"),
+                "Language": child_node.get("Language"),
+                "Pages": child_node.get("Pages"),
+                "Volume": child_node.get("Volume"),
+                "Issue": child_node.get("Issue"),
+                "Classification-JEL": child_node.get("Classification-JEL"),
                 "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
-                "Publication-Status": "Published by %s" % child_node.get("publisher") \
-                    if child_node.get("publisher") else None,
+                "Publication-Status": "Published by %s" % child_node.get("Publication-Status") \
+                    if child_node.get("Publication-Status") else None,
                 "Number": child_node.node.id,
-                "Keywords": child_node.get("keywords"),
+                "Keywords": child_node.get("Keywords"),
                 "Handle": "RePEc:%s:ecbook:%s" % (repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_book(file_data))
