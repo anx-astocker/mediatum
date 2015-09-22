@@ -479,7 +479,7 @@ FROM `node` n INNER JOIN
             del kwargs["parent_id"]
 
         for field, value in kwargs.items():
-            sql_conditions.append("(CAST(a.`name` AS CHAR(50)) = %s AND a.`value` = %s)")
+            sql_conditions.append("(a.`name` = %s AND a.`value` = %s)")
             sql_parameters += (field, value, )
 
         if sql_conditions:

@@ -95,7 +95,6 @@ def _wpaper_rdf(req):
     return content.respond()
 
 
-
 def _ecbook(req):
     req['Content-Type'] = 'text/html; charset=utf-8'
 
