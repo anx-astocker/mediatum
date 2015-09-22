@@ -236,10 +236,10 @@ class Node(RDFContent):
         return default
 
     def get_all_child_nodes(self):
-        return self.__get_child_nodes(lambda: tree.getAllContainerChildrenAbs(self.node, list()))
+        return self.__get_child_nodes(lambda: list(set(tree.getAllContainerChildrenAbs(self.node, list()))))
 
     def get_all_child_nodes_by_field_value(self, **kwargs):
-        return self.__get_child_nodes(lambda: tree.getAllContainerChildrenByFieldValueAbs(self.node, list(), **kwargs))
+        return self.__get_child_nodes(lambda: list(set(tree.getAllContainerChildrenByFieldValueAbs(self.node, list(), **kwargs))))
 
     def get_child_nodes(self):
         return self.__get_child_nodes(self.node.getContentChildren)
