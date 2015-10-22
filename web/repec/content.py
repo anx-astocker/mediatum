@@ -273,6 +273,7 @@ class CollectionJournalContent(RDFCollectionContent):
                 continue
 
             creation_date = Node._get_datetime_from_iso_8601(child_node.get("Creation-Date"))
+            child_year = Node._get_datetime_from_iso_8601(child_node.get("Year"))
             file_url = self._get_document_pdf_url(child_node.node)
 
             file_data = {
@@ -290,13 +291,15 @@ class CollectionJournalContent(RDFCollectionContent):
                         if child_node.get("File-Function") and child_node.get("Year") else None),
                 ]) if file_url else None,
                 "Title": child_node.get("Title"),
+                "Abstract": child_node.get("Abstract"),
                 "Pages": child_node.get("Pages"),
                 "Volume": child_node.get("Volume"),
                 "Issue": child_node.get("Issue"),
                 "Classification-JEL": child_node.get("Classification-JEL"),
                 "Number": child_node.node.id,
-                "Year": child_node.get("Year") if child_node.get("Year") else None,
+                "Year": "%04d" % child_year.year if child_node.get("Year") else None,
                 "Keywords": child_node.get("Keywords"),
+                "Journal": child_node.get("Journal"),
                 "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
                 "Handle": "RePEc:%s:journl:%s" % (repec_code, child_node.node.id),
             }

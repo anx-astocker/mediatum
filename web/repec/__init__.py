@@ -2,6 +2,7 @@ import re
 import logging
 
 from datetime import datetime
+from utils.date import parse_date
 
 from core import tree, config
 from core.acl import AccessData
@@ -219,7 +220,11 @@ class Node(RDFContent):
             if None in (mapping_field, attribute):
                 continue
 
-            attribute_mapping[mapping_field.name] = self.get(attribute.name)
+            val = self.get(attribute.name)
+            if val and ";" in val:
+                attribute_mapping[mapping_field.name] = val.split(";")
+            else:
+                attribute_mapping[mapping_field.name] = val
 
         self.mapping = attribute_mapping
 
@@ -249,7 +254,10 @@ class Node(RDFContent):
         try:
             return datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S")
         except (TypeError, ValueError):
-            return datetime(year=1970, month=1, day=1)
+            try:
+                return parse_date(datestring, "%Y-%m-%dT%H:%M:%S")
+            except:
+                return datetime(year=1970, month=1, day=1)
 
     def __get_child_nodes(self, fetch_function):
         acl = AccessData(self.request)
