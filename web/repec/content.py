@@ -25,16 +25,22 @@ class HTMLCollectionContent(HTMLContent, CollectionMixin):
     def __init__(self, req):
         super(HTMLCollectionContent, self).__init__(req)
 
-        self.status_code = httpstatus.HTTP_OK
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
 
     def status(self):
         return self.status_code
 
     def html(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        repec_code = self.active_collection.get('repec.code')
+
         return tal.processTAL({
             "items": [
-                ("./aaaarch.rdf", "aaaarch.rdf"),
-                ("./aaaseri.rdf", "aaaseri.rdf"),
+                ("./%sarch.rdf" % repec_code, "%sarch.rdf" % repec_code),
+                ("./%sseri.rdf" % repec_code, "%sseri.rdf" % repec_code),
                 ("./journl/", "journl"),
                 ("./wpaper/", "wpaper"),
                 ("./ecbook/", "ecbook"),
@@ -50,12 +56,16 @@ class HTMLCollectionPaperContent(HTMLContent, CollectionMixin):
     def __init__(self, req):
         super(HTMLCollectionPaperContent, self).__init__(req)
 
-        self.status_code = httpstatus.HTTP_OK
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
 
     def status(self):
         return self.status_code
 
     def html(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
         return tal.processTAL({
             "items": [
                 ("./papers.rdf", "papers.rdf"),
@@ -71,12 +81,16 @@ class HTMLCollectionJournalContent(HTMLContent, CollectionMixin):
     def __init__(self, req):
         super(HTMLCollectionJournalContent, self).__init__(req)
 
-        self.status_code = httpstatus.HTTP_OK
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
 
     def status(self):
         return self.status_code
 
     def html(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
         return tal.processTAL({
             "items": [
                 ("./journals.rdf", "journals.rdf"),
@@ -92,12 +106,16 @@ class HTMLCollectionBookContent(HTMLContent, CollectionMixin):
     def __init__(self, req):
         super(HTMLCollectionBookContent, self).__init__(req)
 
-        self.status_code = httpstatus.HTTP_OK
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
 
     def status(self):
         return self.status_code
 
     def html(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
         return tal.processTAL({
             "items": [
                 ("./books.rdf", "books.rdf"),
