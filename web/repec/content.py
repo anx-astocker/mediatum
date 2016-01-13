@@ -27,6 +27,7 @@ class HTMLCollectionContent(HTMLContent, CollectionMixin):
 
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
+        self.child_collections = self._get_child_collections()
 
     def status(self):
         return self.status_code
@@ -36,15 +37,19 @@ class HTMLCollectionContent(HTMLContent, CollectionMixin):
             return ""
 
         repec_code = self.active_collection.get('repec.code')
+        collection_links = []
+
+        for collection in self.child_collections:
+            child_repec_code = collection['repec.code']
+            collection_links.append(("./%swpaper/" % child_repec_code, "%s Working Papers" % child_repec_code))
+            collection_links.append(("./%sjournl/" % child_repec_code, "%s Journal" % child_repec_code))
+            collection_links.append(("./%secbook/" % child_repec_code, "%s Books" % child_repec_code))
 
         return tal.processTAL({
             "items": [
                 ("./%sarch.rdf" % repec_code, "%sarch.rdf" % repec_code),
                 ("./%sseri.rdf" % repec_code, "%sseri.rdf" % repec_code),
-                ("./journl/", "journl"),
-                ("./wpaper/", "wpaper"),
-                ("./ecbook/", "ecbook"),
-            ]
+            ] + collection_links
         }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
 
@@ -73,34 +78,9 @@ class HTMLCollectionPaperContent(HTMLContent, CollectionMixin):
         }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
 
-class HTMLCollectionJournalContent(HTMLContent, CollectionMixin):
-    """
-    Lists the content of the RePEc journal as HTML.
-    """
-
-    def __init__(self, req):
-        super(HTMLCollectionJournalContent, self).__init__(req)
-
-        self.root_collection = self._get_root_collection()
-        self.active_collection = self._get_active_collection()
-
-    def status(self):
-        return self.status_code
-
-    def html(self):
-        if self.status_code != httpstatus.HTTP_OK:
-            return ""
-
-        return tal.processTAL({
-            "items": [
-                ("./journals.rdf", "journals.rdf"),
-            ]
-        }, file="web/repec/templates/directory_browsing.html", request=self.request)
-
-
 class HTMLCollectionBookContent(HTMLContent, CollectionMixin):
     """
-    Lists the content of the RePEc ecbook as HTML.
+    Lists the content of the RePEc working papers as HTML.
     """
 
     def __init__(self, req):
@@ -119,6 +99,31 @@ class HTMLCollectionBookContent(HTMLContent, CollectionMixin):
         return tal.processTAL({
             "items": [
                 ("./books.rdf", "books.rdf"),
+            ]
+        }, file="web/repec/templates/directory_browsing.html", request=self.request)
+
+
+class HTMLCollectionJournalContent(HTMLContent, CollectionMixin):
+    """
+    Lists the content of the RePEc working papers as HTML.
+    """
+
+    def __init__(self, req):
+        super(HTMLCollectionJournalContent, self).__init__(req)
+
+        self.root_collection = self._get_root_collection()
+        self.active_collection = self._get_active_collection()
+
+    def status(self):
+        return self.status_code
+
+    def html(self):
+        if self.status_code != httpstatus.HTTP_OK:
+            return ""
+
+        return tal.processTAL({
+            "items": [
+                ("./journals.rdf", "journals.rdf"),
             ]
         }, file="web/repec/templates/directory_browsing.html", request=self.request)
 
@@ -184,6 +189,7 @@ class CollectionSeriesContent(RDFCollectionContent):
 
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
+        self.child_collections = self._get_child_collections()
 
     @staticmethod
     def _slugify(val):
@@ -198,70 +204,75 @@ class CollectionSeriesContent(RDFCollectionContent):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
+        series_rdfs = []
         collection_node = self.active_collection.node
         collection_owner = self._get_node_owner(collection_node)
         root_domain = config.get("host.name")
-
         repec_code = collection_node["repec.code"]
         provider_name = self._get_inherited_attribute_value(
             collection_node, "repec.provider", default="Unknown Provider",
         )
         provider_id = str(self._slugify(provider_name)).lower()
 
-        collection_data = {
-            "Name": "Working Papers",
-            "Provider-Name": provider_name,
-            "Maintainer-Name": "Unknown",
-            "Maintainer-Email": "nomail@%s" % root_domain,
-            "Type": "ReDIF-Paper",
-            "Handle": "RePEc:%s:wpaper" % repec_code,
-        }
+        for child_collection in self.child_collections:
+            child_repec_code = child_collection['repec.code']
 
-        if collection_owner:
-            collection_data.update({
-                "Maintainer-Name": collection_owner.unicode_name,
-                "Maintainer-Email": collection_owner["email"],
-            })
+            collection_data = {
+                "Name": "Working Papers",
+                "Provider-Name": provider_name,
+                "Maintainer-Name": "Unknown",
+                "Maintainer-Email": "nomail@%s" % root_domain,
+                "Type": "ReDIF-Paper",
+                "Handle": "RePEc:%s:%swpaper" % (repec_code, child_repec_code),
+            }
 
-        wpaper_series_rdf = redif_encode_series(collection_data)
+            if collection_owner:
+                collection_data.update({
+                    "Maintainer-Name": collection_owner.unicode_name,
+                    "Maintainer-Email": collection_owner["email"],
+                })
 
-        collection_data = {
-            "Name": "Journal",
-            "Provider-Name": provider_name,
-            "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
-            "Maintainer-Name": "Unknown",
-            "Maintainer-Email": "nomail@%s" % root_domain,
-            "Type": "ReDIF-Article",
-            "Handle": "RePEc:%s:journl" % repec_code,
-        }
+            wpaper_series_rdf = redif_encode_series(collection_data)
 
-        if collection_owner:
-            collection_data.update({
-                "Maintainer-Name": collection_owner.unicode_name,
-                "Maintainer-Email": collection_owner["email"],
-            })
+            collection_data = {
+                "Name": "Journal",
+                "Provider-Name": provider_name,
+                "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
+                "Maintainer-Name": "Unknown",
+                "Maintainer-Email": "nomail@%s" % root_domain,
+                "Type": "ReDIF-Article",
+                "Handle": "RePEc:%s:%sjournl" % (repec_code, child_repec_code),
+            }
 
-        journl_series_rdf = redif_encode_series(collection_data)
+            if collection_owner:
+                collection_data.update({
+                    "Maintainer-Name": collection_owner.unicode_name,
+                    "Maintainer-Email": collection_owner["email"],
+                })
 
-        collection_data = {
-            "Name": "Books",
-            "Provider-Name": provider_name,
-            "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
-            "Maintainer-Name": "Unknown",
-            "Maintainer-Email": "nomail@%s" % root_domain,
-            "Type": "ReDIF-Book",
-            "Handle": "RePEc:%s:ecbook" % repec_code,
-        }
+            journl_series_rdf = redif_encode_series(collection_data)
 
-        if collection_owner:
-            collection_data.update({
-                "Maintainer-Name": collection_owner.unicode_name,
-                "Maintainer-Email": collection_owner["email"],
-            })
+            collection_data = {
+                "Name": "Books",
+                "Provider-Name": provider_name,
+                "Provider-Institution": "RePEc:%s:%s" % (repec_code, provider_id),
+                "Maintainer-Name": "Unknown",
+                "Maintainer-Email": "nomail@%s" % root_domain,
+                "Type": "ReDIF-Book",
+                "Handle": "RePEc:%s:%secbook" % (repec_code, child_repec_code),
+            }
 
-        ecbook_series_rdf = redif_encode_series(collection_data)
+            if collection_owner:
+                collection_data.update({
+                    "Maintainer-Name": collection_owner.unicode_name,
+                    "Maintainer-Email": collection_owner["email"],
+                })
 
-        return "\n\n".join((wpaper_series_rdf, journl_series_rdf, ecbook_series_rdf))
+            ecbook_series_rdf = redif_encode_series(collection_data)
+
+            series_rdfs.append("\n\n".join((wpaper_series_rdf, journl_series_rdf, ecbook_series_rdf)))
+
+        return "\n\n".join(series_rdfs)
 
 
 class CollectionJournalContent(RDFCollectionContent):
@@ -274,13 +285,15 @@ class CollectionJournalContent(RDFCollectionContent):
 
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
+        self.active_child_collection = self._get_active_child_collection()
 
     def rdf(self):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        child_nodes = self.active_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Article"})
+        child_nodes = self.active_child_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Article"})
         repec_code = self.active_collection.node["repec.code"]
+        repec_child_code = self.active_child_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
@@ -319,7 +332,7 @@ class CollectionJournalContent(RDFCollectionContent):
                 "Keywords": child_node.get("Keywords"),
                 "Journal": child_node.get("Journal"),
                 "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
-                "Handle": "RePEc:%s:journl:%s" % (repec_code, child_node.node.id),
+                "Handle": "RePEc:%s:%sjournl:%s" % (repec_code, repec_child_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_article(file_data))
 
@@ -336,13 +349,15 @@ class CollectionPaperContent(RDFCollectionContent):
 
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
+        self.active_child_collection = self._get_active_child_collection()
 
     def rdf(self):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        child_nodes = self.active_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Paper"})
+        child_nodes = self.active_child_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Paper"})
         repec_code = self.active_collection.node["repec.code"]
+        repec_child_code = self.active_child_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
@@ -381,7 +396,7 @@ class CollectionPaperContent(RDFCollectionContent):
                     if child_node.get("Publication-Status") else None,
                 "Number": child_node.node.id,
                 "Keywords": child_node.get("Keywords"),
-                "Handle": "RePEc:%s:wpaper:%s" % (repec_code, child_node.node.id),
+                "Handle": "RePEc:%s:%swpaper:%s" % (repec_code, repec_child_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_paper(file_data))
 
@@ -398,13 +413,15 @@ class CollectionBookContent(RDFCollectionContent):
 
         self.root_collection = self._get_root_collection()
         self.active_collection = self._get_active_collection()
+        self.active_child_collection = self._get_active_child_collection()
 
     def rdf(self):
         if self.status_code != httpstatus.HTTP_OK:
             return ""
 
-        child_nodes = self.active_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Book"})
+        child_nodes = self.active_child_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Book"})
         repec_code = self.active_collection.node["repec.code"]
+        repec_child_code = self.active_child_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
@@ -443,7 +460,7 @@ class CollectionBookContent(RDFCollectionContent):
                     if child_node.get("Publication-Status") else None,
                 "Number": child_node.node.id,
                 "Keywords": child_node.get("Keywords"),
-                "Handle": "RePEc:%s:ecbook:%s" % (repec_code, child_node.node.id),
+                "Handle": "RePEc:%s:%secbook:%s" % (repec_code, repec_child_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_book(file_data))
 

@@ -18,6 +18,7 @@ log = logging.getLogger("repec")
 
 
 _MATCH_REPEC_CODE = re.compile(r"^/repec/(?P<code>[\d\w]+)/((?P<code_check>[\d\w]+)(arch)|(seri))?.*$")
+_MATCH_CHILD_REPEC_CODE = re.compile(r"^/repec/(?P<code>[\d\w]+)/(?P<child_code>[\d\w]+)(wpaper|journl|ecbook)/.*$")
 
 
 class RDFContent(object):
@@ -112,6 +113,67 @@ class CollectionMixin(object):
         Gets the root collection of the entire MediaTUM database.
         """
         return Node(self.request, self, tree.getRoot("collections"))
+
+    def _get_child_collections(self):
+        acl = AccessData(self.request)
+        active_collection = self.active_collection
+
+        nodes = tree.getChildNodesByFieldValue(active_collection.node.id, **{"repec.code": '__is_set__'})
+        if len(nodes) == 0:
+            log.info("Collection with code %s does not have child collections" % active_collection['repec.code'])
+
+        return [Node(self.request, self, node) for node in nodes if acl.hasReadAccess(node)]
+
+    def _get_active_child_collection(self):
+        acl = AccessData(self.request)
+
+        try:
+            path_match = _MATCH_CHILD_REPEC_CODE.match(self.request.fullpath)
+            repec_child_code = path_match.group("child_code")
+
+            # if we have a check-code in the url, it must equal the code value
+            if repec_child_code is None:
+                log.info("RePEc child collection code not found")
+                raise AttributeError
+
+        except (IndexError, AttributeError):
+            # path does not contain a repec code
+            log.info("RePEc child collection not found")
+            self.status_code = httpstatus.HTTP_NOT_FOUND
+            return None
+
+        # try to load the node
+        try:
+            nodes = tree.getChildNodesByFieldValue(self.active_collection.node.id, **{"repec.code": repec_child_code})
+            if len(nodes) != 1:
+                if len(nodes) > 1:
+                    log.info("More than one child collection with code %s" % repec_child_code)
+                else:
+                    log.info("No collection with code %s" % repec_child_code)
+
+                raise tree.NoSuchNodeError
+            node = nodes[0]
+        except tree.NoSuchNodeError:
+            # requested node not in DB, so set status to 404
+            self.status_code = httpstatus.HTTP_NOT_FOUND
+            return None
+
+        if not acl.hasReadAccess(node):
+            log.info("No access to child collection with code %s" % repec_child_code)
+            # requested node in DB but no access, so set status to 403
+            self.status_code = httpstatus.HTTP_FORBIDDEN
+            return None
+
+        if node.type not in ("directory", "collection"):
+            log.error("Node with code %s is not a collection" % repec_child_code)
+            # requested node in DB and accessible, but not a collection type
+            self.status_code = httpstatus.HTTP_INTERNAL_SERVER_ERROR
+            return None
+
+        # node exists and accessible
+        self.status_code = httpstatus.HTTP_OK
+
+        return Node(self.request, self, node)
 
     def _get_active_collection(self):
         """
