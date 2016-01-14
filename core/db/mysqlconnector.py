@@ -564,3 +564,6 @@ FROM (
 
     def get_nodes_by_field_value(self, **kwargs):
         return self._get_nodes_by_field_value(**kwargs)
+
+    def get_child_nodes_by_field_value(self, nid, **kwargs):
+        return self._get_child_nodes_by_field_value(nid, **kwargs)

@@ -293,11 +293,11 @@ class CollectionJournalContent(RDFCollectionContent):
 
         child_nodes = self.active_child_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Article"})
         repec_code = self.active_collection.node["repec.code"]
-        repec_child_code = self.active_child_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
             child_node.apply_export_mapping("repec-export-article")
+            child_node_repec_code = self._get_inherited_attribute_value(child_node, 'repec.code')
 
             # skip file if mandatory fields are not present
             if None in (child_node.get("Author-Name"), child_node.get("Title")):
@@ -332,7 +332,7 @@ class CollectionJournalContent(RDFCollectionContent):
                 "Keywords": child_node.get("Keywords"),
                 "Journal": child_node.get("Journal"),
                 "Creation-Date": "%04d-%02d-%02d" % (creation_date.year, creation_date.month, creation_date.day),
-                "Handle": "RePEc:%s:%sjournl:%s" % (repec_code, repec_child_code, child_node.node.id),
+                "Handle": "RePEc:%s:%sjournl:%s" % (repec_code, child_node_repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_article(file_data))
 
@@ -357,11 +357,11 @@ class CollectionPaperContent(RDFCollectionContent):
 
         child_nodes = self.active_child_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Paper"})
         repec_code = self.active_collection.node["repec.code"]
-        repec_child_code = self.active_child_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
             child_node.apply_export_mapping("repec-export-paper")
+            child_node_repec_code = self._get_inherited_attribute_value(child_node, 'repec.code')
 
             # skip file if mandatory fields are not present
             if None in (child_node.get("Author-Name"), child_node.get("Title")):
@@ -396,7 +396,7 @@ class CollectionPaperContent(RDFCollectionContent):
                     if child_node.get("Publication-Status") else None,
                 "Number": child_node.node.id,
                 "Keywords": child_node.get("Keywords"),
-                "Handle": "RePEc:%s:%swpaper:%s" % (repec_code, repec_child_code, child_node.node.id),
+                "Handle": "RePEc:%s:%swpaper:%s" % (repec_code, child_node_repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_paper(file_data))
 
@@ -421,11 +421,11 @@ class CollectionBookContent(RDFCollectionContent):
 
         child_nodes = self.active_child_collection.get_all_child_nodes_by_field_value(**{"repec.type": "ReDIF-Book"})
         repec_code = self.active_collection.node["repec.code"]
-        repec_child_code = self.active_child_collection.node["repec.code"]
         rdf_content = []
 
         for child_node in child_nodes:
             child_node.apply_export_mapping("repec-export-book")
+            child_node_repec_code = self._get_inherited_attribute_value(child_node, 'repec.code')
 
             # skip file if mandatory fields are not present
             if None in (child_node.get("Editor-Name"), child_node.get("Title")):
@@ -460,7 +460,7 @@ class CollectionBookContent(RDFCollectionContent):
                     if child_node.get("Publication-Status") else None,
                 "Number": child_node.node.id,
                 "Keywords": child_node.get("Keywords"),
-                "Handle": "RePEc:%s:%secbook:%s" % (repec_code, repec_child_code, child_node.node.id),
+                "Handle": "RePEc:%s:%secbook:%s" % (repec_code, child_node_repec_code, child_node.node.id),
             }
             rdf_content.append(redif_encode_book(file_data))
 

@@ -59,6 +59,9 @@ class CollectionMixin(object):
         pass
 
     def _get_inherited_attribute_value(self, node, attr, default=__NoDefault__):
+        if isinstance(node, Node):
+            node = node.node
+
         try:
             # try to get the attr from given node
             return node[attr]
@@ -125,7 +128,20 @@ class CollectionMixin(object):
         return [Node(self.request, self, node) for node in nodes if acl.hasReadAccess(node)]
 
     def _get_active_child_collection(self):
+        """
+        Gets the active child collection based on the request url. The child RePEc code is used to
+        choose the collection. Expects URL path in the format as follows:
+
+        * `/repec/REPEC_CODE/CHILD_REPEC_CODEjournl/...`
+        * `/repec/REPEC_CODE/CHILD_REPEC_CODEwpaper/...`
+        """
         acl = AccessData(self.request)
+
+        # when we request for an child collection, we need to assert there was a parent collection
+        if not self.active_collection:
+            log.info("RePEc parent collection not found")
+            self.status_code = httpstatus.HTTP_NOT_FOUND
+            return None
 
         try:
             path_match = _MATCH_CHILD_REPEC_CODE.match(self.request.fullpath)
@@ -183,8 +199,8 @@ class CollectionMixin(object):
         * `/repec/REPEC_CODE`
         * `/repec/REPEC_CODE/REPEC_CODEarch.rdf`
         * `/repec/REPEC_CODE/REPEC_CODEseri.rdf`
-        * `/repec/REPEC_CODE/journl/...`
-        * `/repec/REPEC_CODE/wpaper/...`
+        * `/repec/REPEC_CODE/CHILD_REPEC_CODEjournl/...`
+        * `/repec/REPEC_CODE/CHILD_REPEC_CODEwpaper/...`
         """
         acl = AccessData(self.request)
 
@@ -220,19 +236,33 @@ class CollectionMixin(object):
             self.status_code = httpstatus.HTTP_NOT_FOUND
             return None
 
+        # assert that the found node is not an child collection of another RePEc collection
+        for parent in node.getParents():
+            try:
+                self._get_inherited_attribute_value(parent, 'repec.code')
+                raise ValueError
+            except KeyError:
+                pass
+            except ValueError:
+                # requested node is a child collection, so set status to 404
+                self.status_code = httpstatus.HTTP_NOT_FOUND
+                return None
+
+        # check for read permissions on requested node
         if not acl.hasReadAccess(node):
             log.info("No access to collection with code %s" % repec_code)
             # requested node in DB but no access, so set status to 403
             self.status_code = httpstatus.HTTP_FORBIDDEN
             return None
 
+        # assert the found node is a directory or collection
         if node.type not in ("directory", "collection"):
             log.error("Node with code %s is not a collection" % repec_code)
             # requested node in DB and accessible, but not a collection type
             self.status_code = httpstatus.HTTP_INTERNAL_SERVER_ERROR
             return None
 
-        # node exists and accessible
+        # everything went fine, we can continue
         self.status_code = httpstatus.HTTP_OK
 
         return Node(self.request, self, node)

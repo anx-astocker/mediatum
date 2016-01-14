@@ -162,7 +162,7 @@ def getNodesByFieldValue(**kwargs):
 
 
 def getChildNodesByFieldValue(nid, **kwargs):
-    return NodeList(db._get_child_nodes_by_field_value(nid, **kwargs))
+    return NodeList(db.get_child_nodes_by_field_value(nid, **kwargs))
 
 
 class NoSuchNodeError:
